@@ -5,21 +5,22 @@ from erpnext.accounts.doctype.payment_entry.payment_entry import (
 )
 from erpnext.accounts.general_ledger import make_gl_entries
 from erpnext.accounts.doctype.sales_invoice.sales_invoice import get_bank_cash_account
-from suite42_erp_app.suite42_erp_app.doctype.suite42_application_config.suite42_application_config import (
-    Suite42ApplicationConfig,
+
+from hrms.suite42_utils.common_functions import (
+    user_has_role,
+    handle_exceptions_with_readable_message,
+    create_reimbursement_task,
+    mark_tasks_as_completed,
 )
-from suite42_erp_app.suite42_erp_app.common.utils import user_has_role
-from suite42_erp_app.suite42_erp_app.common.authentication.reimbursement_constants import (
+
+from hrms.suite42_utils.reimbursement_constants import (
     RoleConstants,
     ExpenseClaimConstants,
     CompanyConstants,
     EmployeeConstant,
+    TaskTypeConstatns,
 )
-from suite42_erp_app.overrides.custom_company.constants import CompanyNames
-from suite42_erp_app.overrides.custom_task import CustomTask, TaskType
-from suite42_erp_app.suite42_erp_app.common.decorators import (
-    handle_exceptions_with_readable_message,
-)
+
 from frappe.query_builder.functions import Sum
 from frappe.utils import cstr, flt, get_link_to_form
 import frappe
@@ -49,13 +50,13 @@ class CustomExpenseClaim(ExpenseClaim):
                 ):
                     frappe.throw(_("Only the Added approver can edit the document"))
         else:
-            self.payable_account = Suite42ApplicationConfig.get_json_value_without_error(
-                "PAYABLE_ACCOUNTS"
-            )[self.company]["reimbursement_payable_account"]
+            self.payable_account = CompanyConstants.PAYABLE_ACCOUNTS[self.company][
+                "reimbursement_payable_account"
+            ]
 
     def validate_employee_type(self):
         employee_doc = frappe.get_doc("Employee", self.employee)
-        if employee_doc.employment_type == EmployeeConstant.CONTRANCT_EMPLOYEE_TYPE:
+        if employee_doc.employment_type == EmployeeConstant.CONTRACT_EMPLOYEE_TYPE:
             if not employee_doc.supplier:
                 frappe.throw(
                     _(
@@ -107,9 +108,9 @@ class CustomExpenseClaim(ExpenseClaim):
                     frappe.throw(_(f"Invalid State Transition to state {self.status}"))
                 if frappe.session.user != self.owner:
                     frappe.throw(_("Only Owner can request Approval in draft state"))
-                CustomTask.create_link_doc_task_if_all_parents_closed(
+                create_reimbursement_task(
                     None,
-                    TaskType.APPROVE_EXPENSE_CLAIM,
+                    TaskTypeConstatns.APPROVE_EXPENSE_CLAIM,
                     "Expense Claim",
                     self.name,
                     None,
@@ -135,8 +136,8 @@ class CustomExpenseClaim(ExpenseClaim):
                     or frappe.session.user == "Administrator"
                 ):
                     frappe.throw(_(f"Only the Added approver or Admin can approve the document"))
-                CustomTask.mark_tasks_as_completed(
-                    "Expense Claim", self.name, TaskType.APPROVE_EXPENSE_CLAIM
+                mark_tasks_as_completed(
+                    "Expense Claim", self.name, TaskTypeConstatns.APPROVE_EXPENSE_CLAIM
                 )
             elif self.status == ExpenseClaimConstants.PENDING_APPROVAL_BY_HR_L2:
                 if old_doc.status not in [ExpenseClaimConstants.PENDING_APPROVAL_BY_HR_L1]:
@@ -230,9 +231,9 @@ class CustomExpenseClaim(ExpenseClaim):
                     frappe.throw(_(f"Invalid State Transition to state {self.status}"))
                 if frappe.session.user != self.owner:
                     frappe.throw(_("Only Owner can request Approval in draft state"))
-                CustomTask.create_link_doc_task_if_all_parents_closed(
+                create_reimbursement_task(
                     None,
-                    TaskType.APPROVE_EXPENSE_CLAIM,
+                    TaskTypeConstatns.APPROVE_EXPENSE_CLAIM,
                     "Expense Claim",
                     self.name,
                     None,
@@ -259,8 +260,8 @@ class CustomExpenseClaim(ExpenseClaim):
                 ):
                     frappe.throw(_("Only the added approver can approve the document"))
 
-                CustomTask.mark_tasks_as_completed(
-                    "Expense Claim", self.name, TaskType.APPROVE_EXPENSE_CLAIM
+                mark_tasks_as_completed(
+                    "Expense Claim", self.name, TaskTypeConstatns.APPROVE_EXPENSE_CLAIM
                 )
             elif self.status == ExpenseClaimConstants.PENDING_APPROVAL_BY_HR_L2:
                 if old_doc.status not in [ExpenseClaimConstants.PENDING_APPROVAL_BY_ADMIN]:
@@ -284,8 +285,20 @@ class CustomExpenseClaim(ExpenseClaim):
                     frappe.throw(
                         _("Only user having HR L2 Expense Approver role can approve the document")
                     )
-                if employee_doc.employment_type in EmployeeConstant.EMPLOYEMENT_TYPE:
-                    self.make_gl_entries()
+                self.make_gl_entries()
+            elif self.status == ExpenseClaimConstants.PENDING_PURCHASE_INVOICE:
+                if old_doc.status not in [
+                    ExpenseClaimConstants.PENDING_APPROVAL_BY_HR_L2,
+                    ExpenseClaimConstants.PURCHASE_INVOICE_LINKED,
+                ]:
+                    frappe.throw(_(f"Invalid State Transition to state {self.status}"))
+                if (
+                    old_doc.status == ExpenseClaimConstants.PENDING_APPROVAL_BY_HR_L2
+                    and not user_has_role(frappe.session.user, RoleConstants.HR_L2_EXPENSE_ROLE)
+                ):
+                    frappe.throw(
+                        _("Only user having HR L2 Expense Approver role can approve the document")
+                    )
             elif self.status == ExpenseClaimConstants.PURCHASE_INVOICE_LINKED:
                 if old_doc.status not in [ExpenseClaimConstants.PENDING_PURCHASE_INVOICE]:
                     frappe.throw(_(f"Invalid State Transition to state {self.status}"))
@@ -309,6 +322,8 @@ class CustomExpenseClaim(ExpenseClaim):
                     ExpenseClaimConstants.PENDING_PAYMENT,
                     ExpenseClaimConstants.PENDING_APPROVAL_BY_ADMIN,
                     ExpenseClaimConstants.PENDING_APPROVAL_BY_HR_L2,
+                    ExpenseClaimConstants.PENDING_PURCHASE_INVOICE,
+                    ExpenseClaimConstants.PURCHASE_INVOICE_LINKED,
                 ]:
                     frappe.throw(_(f"Invalid State Transition to state {self.status}"))
                 if (
@@ -350,14 +365,14 @@ class CustomExpenseClaim(ExpenseClaim):
                         )
                     )
                 elif (
-                    old_doc.status == ExpenseClaimConstants.PENDING_PURCHASE_INVOICE
+                    old_doc.status
+                    in [
+                        ExpenseClaimConstants.PENDING_PURCHASE_INVOICE,
+                        ExpenseClaimConstants.PURCHASE_INVOICE_LINKED,
+                    ]
                     and frappe.session.user != "Administrator"
                 ):
-                    frappe.throw(
-                        _(
-                            f"Only Admin can cancel in {ExpenseClaimConstants.PENDING_PURCHASE_INVOICE} State"
-                        )
-                    )
+                    frappe.throw(_(f"Only Admin can cancel in {old_doc.status} State"))
                 elif (
                     old_doc.status == ExpenseClaimConstants.PENDING_PAYMENT
                     and frappe.session.user == "Administrator"
@@ -510,7 +525,7 @@ def next_state(doc_name):
             expense_claim_doc.save()
         elif expense_claim_doc.status == ExpenseClaimConstants.PENDING_APPROVAL_BY_HR_L2:
             employee_doc = frappe.get_doc("Employee", expense_claim_doc.employee)
-            if employee_doc.employment_type == EmployeeConstant.CONTRANCT_EMPLOYEE_TYPE:
+            if employee_doc.employment_type == EmployeeConstant.CONTRACT_EMPLOYEE_TYPE:
                 expense_claim_doc.status = ExpenseClaimConstants.PENDING_PURCHASE_INVOICE
             elif expense_claim_doc.grand_total == 0:
                 expense_claim_doc.status = ExpenseClaimConstants.PAID
@@ -564,7 +579,7 @@ def get_mode_of_payments():
 def get_company_bank_accounts():
     return frappe.db.get_list(
         "Bank Account",
-        filters={"company": CompanyNames.SUITE42, "currency": "INR", "is_company_account": 1},
+        filters={"company": CompanyConstants.SUITE42, "currency": "INR", "is_company_account": 1},
         pluck="name",
         ignore_permissions=True,
     )
@@ -598,9 +613,7 @@ def create_payment_entry(doc_name, values):
         if (
             not company_bank_account_doc.is_company_account
             or company_bank_account_doc.account
-            not in Suite42ApplicationConfig.get_json_value_without_error(
-                "REIMBURSEMENT_BANK_ACCOUNT"
-            )
+            not in CompanyConstants.PAYABLE_ACCOUNTS["REIMBURSEMENT_BANK_ACCOUNT"]
         ):
             frappe.throw(_("Company bank account selected is not supported"))
 
