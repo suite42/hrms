@@ -55,9 +55,20 @@ class CustomExpenseClaim(ExpenseClaim):
 
     def validate_employee_type(self):
         employee_doc = frappe.get_doc("Employee", self.employee)
-        if employee_doc.employment_type not in EmployeeConstant.EMPLOYEMENT_TYPE:
+        if employee_doc.employment_type == EmployeeConstant.CONTRANCT_EMPLOYEE_TYPE:
+            if not employee_doc.supplier:
+                frappe.throw(
+                    _(
+                        "Cannot create Expense Claim since there is no supplier attached to this employee"
+                    )
+                )
+            elif self.expense_category_flow == "Flow2":
+                frappe.throw(
+                    _(f"Not allowed to create for expense category - {self.expense_category}")
+                )
+        elif employee_doc.employment_type not in EmployeeConstant.EMPLOYEMENT_TYPE:
             frappe.throw(
-                _(f"{employee_doc.employment_type} Employement Type cannot create expense_claim")
+                _(f"{employee_doc.employment_type} Employement Type cannot create Expense Claim ")
             )
 
     def check_expense_date(self):
@@ -213,6 +224,7 @@ class CustomExpenseClaim(ExpenseClaim):
     def state_transtition_check_for_flow1(self):
         old_doc = self.get_doc_before_save()
         if old_doc is not None and old_doc.status != self.status:
+            employee_doc = frappe.get_doc("Employee", self.employee)
             if self.status == ExpenseClaimConstants.PENDING_APPROVAL:
                 if old_doc.status not in [ExpenseClaimConstants.DRAFT]:
                     frappe.throw(_(f"Invalid State Transition to state {self.status}"))
@@ -259,14 +271,24 @@ class CustomExpenseClaim(ExpenseClaim):
                             f"Only user with role {RoleConstants.OFFICE_ADMIN_ROLE} approve the document"
                         )
                     )
-            elif self.status == ExpenseClaimConstants.PENDING_PAYMENT:
-                if old_doc.status not in [ExpenseClaimConstants.PENDING_APPROVAL_BY_HR_L2]:
+            elif self.status in [
+                ExpenseClaimConstants.PENDING_PAYMENT,
+                ExpenseClaimConstants.PENDING_PURCHASE_INVOICE,
+            ]:
+                if old_doc.status not in [
+                    ExpenseClaimConstants.PENDING_APPROVAL_BY_HR_L2,
+                    ExpenseClaimConstants.PURCHASE_INVOICE_LINKED,
+                ]:
                     frappe.throw(_(f"Invalid State Transition to state {self.status}"))
                 if not user_has_role(frappe.session.user, RoleConstants.HR_L2_EXPENSE_ROLE):
                     frappe.throw(
                         _("Only user having HR L2 Expense Approver role can approve the document")
                     )
-                self.make_gl_entries()
+                if employee_doc.employment_type in EmployeeConstant.EMPLOYEMENT_TYPE:
+                    self.make_gl_entries()
+            elif self.status == ExpenseClaimConstants.PURCHASE_INVOICE_LINKED:
+                if old_doc.status not in [ExpenseClaimConstants.PENDING_PURCHASE_INVOICE]:
+                    frappe.throw(_(f"Invalid State Transition to state {self.status}"))
             elif self.status == ExpenseClaimConstants.PAID:
                 if old_doc.status not in [
                     ExpenseClaimConstants.PENDING_PAYMENT,
@@ -322,7 +344,20 @@ class CustomExpenseClaim(ExpenseClaim):
                     old_doc.status == ExpenseClaimConstants.PENDING_PAYMENT
                     and frappe.session.user != "Administrator"
                 ):
-                    frappe.throw(_("Only Admin can cancel in Pending Payment State"))
+                    frappe.throw(
+                        _(
+                            f"Only Admin can cancel in {ExpenseClaimConstants.PENDING_PAYMENT} State"
+                        )
+                    )
+                elif (
+                    old_doc.status == ExpenseClaimConstants.PENDING_PURCHASE_INVOICE
+                    and frappe.session.user != "Administrator"
+                ):
+                    frappe.throw(
+                        _(
+                            f"Only Admin can cancel in {ExpenseClaimConstants.PENDING_PURCHASE_INVOICE} State"
+                        )
+                    )
                 elif (
                     old_doc.status == ExpenseClaimConstants.PENDING_PAYMENT
                     and frappe.session.user == "Administrator"
@@ -474,7 +509,10 @@ def next_state(doc_name):
             expense_claim_doc.status = ExpenseClaimConstants.PENDING_APPROVAL_BY_HR_L2
             expense_claim_doc.save()
         elif expense_claim_doc.status == ExpenseClaimConstants.PENDING_APPROVAL_BY_HR_L2:
-            if expense_claim_doc.grand_total == 0:
+            employee_doc = frappe.get_doc("Employee", expense_claim_doc.employee)
+            if employee_doc.employment_type == EmployeeConstant.CONTRANCT_EMPLOYEE_TYPE:
+                expense_claim_doc.status = ExpenseClaimConstants.PENDING_PURCHASE_INVOICE
+            elif expense_claim_doc.grand_total == 0:
                 expense_claim_doc.status = ExpenseClaimConstants.PAID
             else:
                 expense_claim_doc.status = ExpenseClaimConstants.PENDING_PAYMENT
