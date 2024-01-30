@@ -225,7 +225,8 @@ frappe.ui.form.on("Expense Claim", {
 
 		var submit_button_required = false;
 		var cancel_button_requried = false;
-		if(frm.doc.status !== "Pending Payment" && frm.doc.status !== "Paid" && !frm.is_dirty() && frm.doc.docstatus !==2){
+		var doc_status = ["Pending Payment", "Paid", "Purchase Invoice Linked", "Pending Purchase Invoice"]
+		if(!doc_status.includes(frm.doc.status) && !frm.is_dirty() && frm.doc.docstatus !==2){
 			submit_button_required = true
 		}
 		if(frm.doc.docstatus === 0 && !frm.is_dirty()){

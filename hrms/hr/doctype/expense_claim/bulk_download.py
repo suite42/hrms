@@ -2,20 +2,17 @@ import frappe
 from frappe import _
 from frappe.utils.csvutils import build_csv_response
 import pandas as pd
-from suite42_erp_app.suite42_erp_app.common.decorators import (
+from apps.hrms.hrms.suite42_utils.common_functions import (
+    user_has_role,
     handle_exceptions_with_readable_message,
 )
-from suite42_erp_app.suite42_erp_app.common.authentication.reimbursement_constants import (
+from hrms.suite42_utils.reimbursement_constants import (
     RoleConstants,
     ExpenseClaimConstants,
-    EmployeeConstant,
     CompanyConstants,
+    EmployeeConstant,
 )
-from suite42_erp_app.suite42_erp_app.doctype.suite42_application_config.suite42_application_config import (
-    Suite42ApplicationConfig,
-)
-from suite42_erp_app.suite42_erp_app.common.utils import user_has_role
-from suite42_erp_app.overrides.custom_company.constants import CompanyNames
+
 import json
 from datetime import datetime
 
@@ -23,15 +20,15 @@ from datetime import datetime
 @frappe.whitelist()
 @handle_exceptions_with_readable_message
 def bulk_download(company, account):
-    if company != CompanyNames.SUITE42:
-        frappe.throw(_(f"Currently Only for Company {CompanyNames.SUITE42} is supported"))
+    if company != CompanyConstants.SUITE42:
+        frappe.throw(_(f"Currently Only for Company {CompanyConstants.SUITE42} is supported"))
 
     company_bank_account_doc = frappe.get_doc("Bank Account", account)
 
     if (
         not company_bank_account_doc.is_company_account
         or company_bank_account_doc.bank_account_no
-        not in Suite42ApplicationConfig.get_json_value_without_error("REIMBURSEMENT_BANK_ACCOUNT")
+        not in CompanyConstants.PAYABLE_ACCOUNTS["REIMBURSEMENT_BANK_ACCOUNT"]
     ):
         frappe.throw(_("Company bank account selected is not supported"))
 
@@ -46,7 +43,7 @@ def bulk_download(company, account):
         filters={
             "status": "active",
             "employment_type": ["in", EmployeeConstant.EMPLOYEMENT_TYPE],
-            "company": CompanyNames.SUITE42,
+            "company": CompanyConstants.SUITE42,
         },
         pluck="name",
         ignore_permissions=True,

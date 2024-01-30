@@ -1,6 +1,5 @@
 {
  "actions": [],
- "allow_import": 1,
  "autoname": "naming_series:",
  "creation": "2013-01-10 16:34:14",
  "doctype": "DocType",
@@ -55,7 +54,8 @@
   "status",
   "amended_from",
   "is_submit_and_cancel",
-  "expense_category_flow"
+  "expense_category_flow",
+  "employee_supplier"
  ],
  "fields": [
   {
@@ -301,10 +301,11 @@
    "default": "Draft",
    "fieldname": "status",
    "fieldtype": "Select",
+   "in_filter": 1,
    "in_list_view": 1,
    "label": "Status",
    "no_copy": 1,
-   "options": "Draft\nPaid\nSubmitted\nCancelled\nPending Approval\nPending Approval By Admin\nPending Approval By HR L1\nPending Approval By HR L2\nPending Payment\nPaid",
+   "options": "Draft\nPaid\nSubmitted\nCancelled\nPending Approval\nPending Approval By Admin\nPending Approval By HR L1\nPending Approval By HR L2\nPending Purchase Invoice\nPurchase Invoice Linked\nPending Payment\nPaid",
    "print_hide": 1,
    "read_only": 1
   },
@@ -415,13 +416,6 @@
    "reqd": 1
   },
   {
-   "fetch_from": "expense_category.expense_claim_flow",
-   "fieldname": "expense_category_flow",
-   "fieldtype": "Data",
-   "hidden": 1,
-   "label": "Expense Category Flow"
-  },
-  {
    "allow_on_submit": 1,
    "default": "1",
    "fieldname": "is_overriden",
@@ -429,13 +423,26 @@
    "label": "Overriden",
    "no_copy": 1,
    "permlevel": 3
+  },
+  {
+   "fetch_from": "expense_category.expense_claim_flow",
+   "fieldname": "expense_category_flow",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Expense Category Flow"
+  },
+  {
+   "fetch_from": "employee.supplier",
+   "fieldname": "employee_supplier",
+   "fieldtype": "Data",
+   "label": "Employee Supplier"
   }
  ],
  "icon": "fa fa-money",
  "idx": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-02-17 18:10:24.789090",
+ "modified": "2024-02-20 17:57:44.334225",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Expense Claim",
@@ -444,8 +451,6 @@
  "owner": "Administrator",
  "permissions": [
   {
-   "amend": 1,
-   "cancel": 1,
    "create": 1,
    "delete": 1,
    "email": 1,
@@ -453,47 +458,8 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "HR Manager",
+   "role": "System Manager",
    "share": 1,
-   "submit": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "email": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Employee",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "amend": 1,
-   "cancel": 1,
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Expense Approver",
-   "share": 1,
-   "submit": 1,
-   "write": 1
-  },
-  {
-   "amend": 1,
-   "cancel": 1,
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "HR User",
-   "share": 1,
-   "submit": 1,
    "write": 1
   }
  ],
@@ -525,6 +491,14 @@
   {
    "color": "Orange",
    "title": "Pending Approval By HR L2"
+  },
+  {
+   "color": "Orange",
+   "title": "Pending Purchase Invoice"
+  },
+  {
+   "color": "Blue",
+   "title": "Purchase Invoice Linked"
   }
  ],
  "timeline_field": "employee",
