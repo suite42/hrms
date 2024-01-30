@@ -1,24 +1,25 @@
 from hrms.hr.doctype.employee_advance.employee_advance import EmployeeAdvance
-from suite42_erp_app.overrides.custom_task import CustomTask, TaskType
 from erpnext.accounts.doctype.payment_entry.payment_entry import (
     get_party_details,
     get_account_details,
 )
-from suite42_erp_app.suite42_erp_app.doctype.suite42_application_config.suite42_application_config import (
-    Suite42ApplicationConfig,
-)
-from suite42_erp_app.suite42_erp_app.common.utils import user_has_role
 from erpnext.accounts.doctype.sales_invoice.sales_invoice import get_bank_cash_account
-from suite42_erp_app.suite42_erp_app.common.authentication.reimbursement_constants import (
+
+from hrms.suite42_utils.common_functions import (
+    user_has_role,
+    handle_exceptions_with_readable_message,
+    create_reimbursement_task,
+    mark_tasks_as_completed,
+)
+
+from hrms.suite42_utils.reimbursement_constants import (
     RoleConstants,
     EmployeeAdvanceConstants,
     CompanyConstants,
     EmployeeConstant,
+    TaskTypeConstatns,
 )
-from suite42_erp_app.overrides.custom_company.constants import CompanyNames
-from suite42_erp_app.suite42_erp_app.common.decorators import (
-    handle_exceptions_with_readable_message,
-)
+
 from frappe.utils import cstr, flt
 import frappe
 from frappe import _
@@ -45,9 +46,9 @@ class CustomEmployeeAdvance(EmployeeAdvance):
                 ):
                     frappe.throw(_("Only the Added approver can edit the document"))
         else:
-            self.advance_account = Suite42ApplicationConfig.get_json_value_without_error(
-                "PAYABLE_ACCOUNTS"
-            )[self.company]["advance_payable_account"]
+            self.advance_account = CompanyConstants.PAYABLE_ACCOUNTS[self.company][
+                "advance_payable_account"
+            ]
 
     def validate_employee_type(self):
         employee_doc = frappe.get_doc("Employee", self.employee)
@@ -67,9 +68,9 @@ class CustomEmployeeAdvance(EmployeeAdvance):
                     frappe.throw(_(f"Invalid State Transition to state {self.status}"))
                 if frappe.session.user != self.owner:
                     frappe.throw(_("Only Owner can request Approval in draft state"))
-                CustomTask.create_link_doc_task_if_all_parents_closed(
+                create_reimbursement_task(
                     None,
-                    TaskType.APPROVE_EMPLOYEE_ADVANCE,
+                    TaskTypeConstatns.APPROVE_EMPLOYEE_ADVANCE,
                     "Employee Advance",
                     self.name,
                     None,
@@ -92,8 +93,8 @@ class CustomEmployeeAdvance(EmployeeAdvance):
                     or frappe.session.user == "Administrator"
                 ):
                     frappe.throw(_("Only the Added approver can approve"))
-                CustomTask.mark_tasks_as_completed(
-                    "Employee Advance", self.name, TaskType.APPROVE_EMPLOYEE_ADVANCE
+                mark_tasks_as_completed(
+                    "Employee Advance", self.name, TaskTypeConstatns.APPROVE_EMPLOYEE_ADVANCE
                 )
             elif self.status == EmployeeAdvanceConstants.PENDING_PAYMENT:
                 if old_doc.status not in [EmployeeAdvanceConstants.PENDING_APPROVAL_BY_HR]:
@@ -302,9 +303,7 @@ def create_payment_entry(doc_name, values):
         if (
             not company_bank_account_doc.is_company_account
             or company_bank_account_doc.account
-            not in Suite42ApplicationConfig.get_json_value_without_error(
-                "REIMBURSEMENT_BANK_ACCOUNT"
-            )
+            not in CompanyConstants.PAYABLE_ACCOUNTS["REIMBURSEMENT_BANK_ACCOUNT"]
         ):
             frappe.throw(_("Company bank account selected is not supported"))
         bank_cash_doc = frappe.get_doc("Account", company_bank_account_doc.account)

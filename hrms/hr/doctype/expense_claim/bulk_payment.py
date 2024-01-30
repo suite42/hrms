@@ -6,25 +6,23 @@ from datetime import datetime
 from io import StringIO
 import requests
 
-from suite42_erp_app.suite42_erp_app.common.decorators import (
+from apps.hrms.hrms.suite42_utils.common_functions import (
+    user_has_role,
     handle_exceptions_with_readable_message,
 )
+
 from erpnext.accounts.doctype.payment_entry.payment_entry import (
     get_party_details,
     get_account_details,
 )
 from erpnext.accounts.doctype.sales_invoice.sales_invoice import get_bank_cash_account
-from suite42_erp_app.suite42_erp_app.common.authentication.reimbursement_constants import (
+
+from hrms.suite42_utils.reimbursement_constants import (
     RoleConstants,
     ExpenseClaimConstants,
     CompanyConstants,
 )
-from suite42_erp_app.suite42_erp_app.common.utils import user_has_role
 from frappe_s3_attachment.controller import get_public_file_url
-from suite42_erp_app.suite42_erp_app.doctype.suite42_application_config.suite42_application_config import (
-    Suite42ApplicationConfig,
-)
-from suite42_erp_app.overrides.custom_company.constants import CompanyNames
 
 
 @frappe.whitelist()
@@ -135,10 +133,9 @@ def bulk_payment(url):
             employee_doc.company, "Employee", employee_doc.name, frappe.utils.nowdate()
         )
 
-        if row[
-            "Sending Account Number"
-        ] not in Suite42ApplicationConfig.get_json_value_without_error(
-            "REIMBURSEMENT_BANK_ACCOUNT"
+        if (
+            row["Sending Account Number"]
+            not in CompanyConstants.PAYABLE_ACCOUNTS["REIMBURSEMENT_BANK_ACCOUNT"]
         ):
             frappe.throw(_(f"Account Number added is not supported currently"))
 
@@ -147,14 +144,14 @@ def bulk_payment(url):
             filters={
                 "currency": "INR",
                 "is_company_account": 1,
-                "company": CompanyNames.SUITE42,
+                "company": CompanyConstants.SUITE42,
                 "bank_account_no": row["Sending Account Number"],
             },
             pluck="name",
         )
 
         if not company_bank_account_exists:
-            frappe.throw(_(f"For Company {CompanyNames.SUITE42} No INR Bank Account present"))
+            frappe.throw(_(f"For Company {CompanyConstants.SUITE42} No INR Bank Account present"))
         else:
             # Currently Allowing only One Account
             company_bank_account_doc = frappe.get_doc(
