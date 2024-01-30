@@ -1,7 +1,20 @@
 // Copyright (c) 2017, Frappe Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
-
 frappe.ui.form.on('Employee Advance', {
+	onload: function(frm) {
+		if(frm.doc.status === "Draft" && frm.doc.docstatus === 0){
+			frappe.db.get_value("Employee", {"user_id": frappe.session.user}, ["name", "employee_name", "company"], function(response) {
+				if (Object.keys(response).length !== 0) {
+					frm.doc.employee = response["name"]
+					frm.doc.employee_name = response["employee_name"]
+					frm.doc.company = response["company"]
+					frm.refresh_fields("employee")
+					frm.refresh_fields("employee_name")
+				}
+			});
+		}
+	},
+
 	setup: function(frm) {
 		frm.add_fetch("employee", "company", "company");
 		frm.add_fetch("company", "default_employee_advance_account", "advance_account");
@@ -44,41 +57,146 @@ frappe.ui.form.on('Employee Advance', {
 	},
 
 	refresh: function(frm) {
-		if (frm.doc.docstatus === 1 &&
-			(flt(frm.doc.paid_amount) < flt(frm.doc.advance_amount)) &&
-			frappe.model.can_create("Payment Entry")) {
-			frm.add_custom_button(__('Payment'),
-				function () {
-					frm.events.make_payment_entry(frm);
-				}, __('Create'));
-		} else if (
-			frm.doc.docstatus === 1 &&
-			flt(frm.doc.claimed_amount) < flt(frm.doc.paid_amount) - flt(frm.doc.return_amount) &&
-			frappe.model.can_create("Expense Claim")
-		) {
-			frm.add_custom_button(
-				__("Expense Claim"),
-				function () {
-					frm.events.make_expense_claim(frm);
-				},
-				__('Create')
-			);
+		var submit_button_required = false;
+		var cancel_button_requried = false;
+		
+		if(frm.doc.status !== "Pending Payment" && frm.doc.status !== "Paid" && frm.doc.status !== "Partly Claimed" && frm.doc.status !== "Claimed" && !frm.is_dirty() && frm.doc.docstatus !==2){
+			submit_button_required = true
 		}
 
-		if (
-			frm.doc.docstatus === 1
-			&& (flt(frm.doc.claimed_amount) < flt(frm.doc.paid_amount) - flt(frm.doc.return_amount))
-		) {
-			if (frm.doc.repay_unclaimed_amount_from_salary == 0 && frappe.model.can_create("Journal Entry")) {
-				frm.add_custom_button(__("Return"), function() {
-					frm.trigger('make_return_entry');
-				}, __('Create'));
-			} else if (frm.doc.repay_unclaimed_amount_from_salary == 1 && frappe.model.can_create("Additional Salary")) {
-				frm.add_custom_button(__("Deduction from Salary"), function() {
-					frm.events.make_deduction_via_additional_salary(frm);
-				}, __('Create'));
-			}
+		if(frm.doc.docstatus === 0 && !frm.is_dirty()){
+			cancel_button_requried = true
 		}
+		frappe.require('assets/hrms/js/expense_button.js', () => {
+			frappe.require('assets/hrms/js/expense_cancel_button.js', () => {
+				if (submit_button_required) {
+					add_submit_button(frm);
+				}
+				if (cancel_button_requried) {
+					add_cancel_button(frm);
+				}
+			});
+		});
+
+		if(frm.doc.status === "Pending Payment"){
+			frm.events.get_mode_of_payments(frm)
+			frm.events.get_company_bank_accounts(frm)
+			var modeOfPayment = null
+			frm.add_custom_button(__("Pay"), function() {
+				frappe.prompt([
+					{
+						label: __('Mode Of Payment'),
+						fieldname: 'mode_payment',
+						fieldtype: 'Select',
+						options: frm.fields_dict['payments_mode'].options,
+						reqd:1,
+					}
+				], function(values){
+					var modeOfPayment = values.mode_payment
+					var default_form_account="";
+					if (modeOfPayment == "Cash"){
+						default_form_account="Cash - Suite42"
+						frm.fields_dict['from_account'].options.push(default_form_account)
+					}
+					frappe.prompt([
+						{
+							label: __('Mode Of Payment'),
+							fieldname: 'mode_of_payment',
+							fieldtype: 'Data',
+							options: modeOfPayment,
+							reqd:1,
+						},
+						{
+							label: __('Comapny Bank Account'),
+							fieldname: 'from_account',
+							fieldtype: 'Select',
+							options: frm.fields_dict['from_account'].options,
+							default: default_form_account,
+							reqd:1,
+						},
+						{
+							label: __('To Chart Account '),
+							fieldname: 'to_chart_Account',
+							fieldtype: 'Data',
+							default: frm.doc.advance_account,
+							reqd:1,
+							read_only: 1
+						},
+						{
+							label: __('Payment Date'),
+							fieldname: 'payment_date',
+							fieldtype: 'Date',
+							reqd:1,
+						},
+						{
+							label: __('Reference No'),
+							fieldname: 'reference_no',
+							fieldtype: 'Data',
+						},
+						{
+							label: __('Amount'),
+							fieldname: 'total_amount',
+							fieldtype: 'Currency',
+							default: frm.doc.sanctioned_amount,
+							read_only: 1,
+						}
+					], function(values){
+						frm.events.create_payment_entry(frm, values);
+						frm.refresh()
+					},__("Enter Payment Details"))
+				},__("Payment Details"))
+			});
+		}
+
+	},
+
+	get_company_bank_accounts: function(frm){
+		frappe.call({
+			method: "hrms.overrides.custom_expense_claim.get_company_bank_accounts",
+			callback: function(r) {
+				if (r.message) {
+					frm.fields_dict['from_account']={
+						label: "From Account",
+						fieldname: "from_account",
+						options: null,
+					}
+					frm.fields_dict['from_account'].options = r.message;
+					frm.refresh_fields("from_account")
+				}
+			}
+		});
+	},
+
+
+	get_mode_of_payments: function(frm){
+		frappe.call({
+			method: "hrms.overrides.custom_expense_claim.get_mode_of_payments",
+			callback: function(r) {
+				if (r.message) {
+					frm.fields_dict['payments_mode']={
+						label: "Payments Mode",
+						fieldname: "payments_mode",
+						options: null,
+					}
+					frm.fields_dict['payments_mode'].options = r.message;
+					frm.refresh_fields("payments_mode")
+				}
+			}
+		});
+	},
+
+	create_payment_entry: function(frm, values){
+		frappe.call({
+			method: "hrms.overrides.custom_employee_advance.create_payment_entry",
+			args: {
+				doc_name: frm.doc.name,
+				values: values
+			},
+			callback: function(r) {
+				frm.reload_doc();				
+				return r.message
+			}
+		});
 	},
 
 	make_deduction_via_additional_salary: function(frm) {
@@ -153,7 +271,7 @@ frappe.ui.form.on('Employee Advance', {
 	employee: function(frm) {
 		if (frm.doc.employee) {
 			frappe.run_serially([
-				() => frm.trigger('get_employee_currency'),
+				// () => frm.trigger('get_employee_currency'),
 				() => frm.trigger('get_pending_amount')
 			]);
 		}

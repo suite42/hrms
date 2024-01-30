@@ -7,6 +7,19 @@ frappe.provide("erpnext.accounts.dimensions");
 frappe.ui.form.on('Expense Claim', {
 	onload: function(frm) {
 		erpnext.accounts.dimensions.setup_dimension_filters(frm, frm.doctype);
+	
+
+		if(frm.doc.status === "Draft" && frm.doc.docstatus === 0 && (frm.doc.employee?.length || 0) === 0){
+			frappe.db.get_value("Employee", {"user_id": frappe.session.user}, ["name", "employee_name", "company"], function(response) {
+			if (Object.keys(response).length !== 0) {
+				frm.doc.employee = response["name"]
+				frm.doc.employee_name = response["employee_name"]
+				frm.doc.company = response["company"]
+				frm.refresh_fields("employee")
+				frm.refresh_fields("employee_name")
+			}
+			});
+		}
 	},
 	company: function(frm) {
 		erpnext.accounts.dimensions.update_dimension(frm, frm.doctype);
@@ -146,8 +159,6 @@ erpnext.expense_claim = {
 frappe.ui.form.on("Expense Claim", {
 	setup: function(frm) {
 		frm.add_fetch("company", "cost_center", "cost_center");
-		frm.add_fetch("company", "default_expense_claim_payable_account", "payable_account");
-
 		frm.set_query("employee_advance", "advances", function() {
 			return {
 				filters: [
@@ -156,16 +167,6 @@ frappe.ui.form.on("Expense Claim", {
 					['paid_amount', '>', 0],
 					['status', 'not in', ['Claimed', 'Returned', 'Partly Claimed and Returned']]
 				]
-			};
-		});
-
-		frm.set_query("expense_approver", function() {
-			return {
-				query: "hrms.hr.doctype.department_approver.department_approver.get_approvers",
-				filters: {
-					employee: frm.doc.employee,
-					doctype: frm.doc.doctype
-				}
 			};
 		});
 
@@ -204,26 +205,11 @@ frappe.ui.form.on("Expense Claim", {
 		});
 	},
 
-	onload: function(frm) {
-		if (frm.doc.docstatus == 0) {
-			return frappe.call({
-				method: "hrms.hr.doctype.leave_application.leave_application.get_mandatory_approval",
-				args: {
-					doctype: frm.doc.doctype,
-				},
-				callback: function(r) {
-					if (!r.exc && r.message) {
-						frm.toggle_reqd("expense_approver", true);
-					}
-				}
-			});
-		}
-	},
-
 	refresh: function(frm) {
 		frm.trigger("toggle_fields");
 
-		if(frm.doc.docstatus > 0 && frm.doc.approval_status !== "Rejected") {
+		var statusArray = ["Pending Payment", "Paid", "Cancelled"]
+		if(frm.doc.docstatus > 0 && statusArray.includes(frm.doc.status)) {
 			frm.add_custom_button(__('Accounting Ledger'), function() {
 				frappe.route_options = {
 					voucher_no: frm.doc.name,
@@ -237,14 +223,194 @@ frappe.ui.form.on("Expense Claim", {
 			}, __("View"));
 		}
 
-		if (
-			frm.doc.docstatus === 1
-			&& frm.doc.status !== "Paid"
-			&& frappe.model.can_create("Payment Entry")
-		) {
-			frm.add_custom_button(__('Payment'),
-				function() { frm.events.make_payment_entry(frm); }, __('Create'));
+		var submit_button_required = false;
+		var cancel_button_requried = false;
+		if(frm.doc.status !== "Pending Payment" && frm.doc.status !== "Paid" && !frm.is_dirty() && frm.doc.docstatus !==2){
+			submit_button_required = true
 		}
+		if(frm.doc.docstatus === 0 && !frm.is_dirty()){
+			cancel_button_requried = true
+		}
+		frappe.require('assets/hrms/js/expense_button.js', () => {
+			frappe.require('assets/hrms/js/expense_cancel_button.js', () => {
+				if (submit_button_required) {
+					add_submit_button(frm);
+				}
+				if (cancel_button_requried) {
+					add_cancel_button(frm);
+				}
+			});
+		});
+		if(frm.doc.status === "Pending Payment"){
+			frm.events.get_total_remaining_amount(frm)
+			frm.events.get_mode_of_payments(frm)
+			frm.events.get_company_bank_accounts(frm)
+			var modeOfPayment = null
+			frm.add_custom_button(__("Pay"), function() {
+				frappe.prompt([
+					{
+						label: __('Mode Of Payment'),
+						fieldname: 'mode_payment',
+						fieldtype: 'Select',
+						options: frm.fields_dict['payments_mode'].options,
+						reqd:1,
+					}
+				], function(values){
+					var modeOfPayment = values.mode_payment
+					var default_form_account="";
+					if (modeOfPayment == "Cash"){
+						default_form_account="Cash - Suite42"
+						frm.fields_dict['from_account'].options.push(default_form_account)
+					}
+					frappe.prompt([
+						{
+							label: __('Mode Of Payment'),
+							fieldname: 'mode_of_payment',
+							fieldtype: "Data",
+							default: modeOfPayment,
+							reqd:1,
+							read_only: 1,
+						},
+						{
+							label: __('Comapny Bank Account'),
+							fieldname: 'from_account',
+							fieldtype: 'Select',
+							options: frm.fields_dict['from_account'].options,
+							default: default_form_account,
+							reqd:1,
+						},
+						{
+							label: __('To Chart Account '),
+							fieldname: 'to_chart_Account',
+							fieldtype: 'Data',
+							default: frm.doc.payable_account,
+							reqd:1,
+							read_only: 1
+						},
+						{
+							label: __('Payment Date'),
+							fieldname: 'payment_date',
+							fieldtype: 'Date',
+							reqd:1,
+						},
+						{
+							label: __('Reference No'),
+							fieldname: 'reference_no',
+							fieldtype: 'Data',
+						},
+						{
+							label: __('Total Pending Amount (Including All the expense claim)'),
+							fieldname: 'total_pending_amount',
+							fieldtype: 'Currency',
+							default: frm.fields_dict['total_pending_amount'].data,
+							read_only: 1,
+						},
+						{
+							label: __('Amount'),
+							fieldname: 'paid_amount',
+							fieldtype: 'Currency',
+							reqd: 1,
+						},
+						{
+							label: __('Expense Claim List'),
+							fieldname: 'expense_claim_list',
+							fieldtype: 'Data',
+							default: frm.fields_dict['expense_claim_list'].default,
+							read_only: 1
+						}
+					], function(values){
+						frm.events.create_payment_entry(frm, values);
+					},__("Enter Payment Details"))
+				},__("Payment Details"))
+
+			}).addClass("btn btn-primary btn-sm");
+		}
+
+	},
+
+	get_mode_of_payments: function(frm){
+		frappe.call({
+			method: "hrms.overrides.custom_expense_claim.get_mode_of_payments",
+			callback: function(r) {
+				if (r.message) {
+					frm.fields_dict['payments_mode']={
+						label: "Payments Mode",
+						fieldname: "payments_mode",
+						options: null,
+					}
+					frm.fields_dict['payments_mode'].options = r.message;
+					frm.refresh_fields("payments_mode")
+				}
+			}
+		});
+	},
+
+	get_company_bank_accounts: function(frm){
+		frappe.call({
+			method: "hrms.overrides.custom_expense_claim.get_company_bank_accounts",
+			callback: function(r) {
+				if (r.message) {
+					frm.fields_dict['from_account']={
+						label: "From Account",
+						fieldname: "from_account",
+						options: null,
+					}
+					frm.fields_dict['from_account'].options = r.message;
+					frm.refresh_fields("from_account")
+				}
+			}
+		});
+	},
+
+	get_total_remaining_amount: function(frm){
+		frappe.call({
+			method: "hrms.overrides.custom_expense_claim.get_total_pending_amount",
+			args: {
+				doc_employee_name: frm.doc.employee_name,
+			},
+			callback: function(r) {
+				if (r.message) {
+					var total_pending_amount = 0;
+					var expense_claim_list = [];
+					r.message.forEach(function(row){
+						total_pending_amount += row.grand_total
+						expense_claim_list.push(row.name)
+					});
+
+					frm.fields_dict["expense_claim_list"] = {
+						label: "Expense Claim List",
+						fieldname: "expense_claim_list",
+						fieldtype: 'Data',
+						default: expense_claim_list
+					}
+
+					frm.fields_dict['total_pending_amount']={
+						label: "Total Pending Amount",
+						fieldname: "total_pending_amount",
+						fieldtype: 'Currency',
+						data: total_pending_amount,					
+					}
+					frm.refresh_fields("total_pending_amount")
+					frm.refresh_fields("expense_claim_list")
+					return r.message
+				}
+			}
+		});	
+	},
+
+
+	create_payment_entry: function(frm, values){
+		frappe.call({
+			method: "hrms.overrides.custom_expense_claim.create_payment_entry",
+			args: {
+				doc_name: frm.doc.name,
+				values: values
+			},
+			callback: function(r) {
+				frm.reload_doc();
+				return r.message
+			}
+		});
 	},
 
 	calculate_grand_total: function(frm) {
@@ -305,9 +471,9 @@ frappe.ui.form.on("Expense Claim", {
 		erpnext.expense_claim.set_title(frm);
 	},
 
-	employee: function(frm) {
-		frm.events.get_advances(frm);
-	},
+	// employee: function(frm) {
+	// 	frm.events.get_advances(frm);
+	// },
 
 	cost_center: function(frm) {
 		frm.events.set_child_cost_center(frm);
@@ -368,7 +534,7 @@ frappe.ui.form.on("Expense Claim", {
 frappe.ui.form.on("Expense Claim Detail", {
 	amount: function(frm, cdt, cdn) {
 		var child = locals[cdt][cdn];
-		frappe.model.set_value(cdt, cdn, 'sanctioned_amount', child.amount);
+		// frappe.model.set_value(cdt, cdn, 'sanctioned_amount', child.amount);
 	},
 
 	sanctioned_amount: function(frm, cdt, cdn) {
@@ -450,3 +616,4 @@ frappe.ui.form.on("Expense Taxes and Charges", {
 		frm.trigger("calculate_total_tax", cdt, cdn);
 	}
 });
+

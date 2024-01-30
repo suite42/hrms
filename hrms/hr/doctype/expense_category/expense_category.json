@@ -1,0 +1,68 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:description",
+ "creation": "2024-02-08 11:43:36.952428",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "description",
+  "expense_claim_flow",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "description",
+   "fieldtype": "Data",
+   "label": "Description",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Expense Category",
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "allow_in_quick_entry": 1,
+   "fieldname": "expense_claim_flow",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Expense Claim Flow",
+   "options": "Flow1\nFlow2",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-02-17 07:47:31.985997",
+ "modified_by": "Administrator",
+ "module": "HR",
+ "name": "Expense Category",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
