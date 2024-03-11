@@ -28,7 +28,7 @@ def bulk_download(company, account):
     if (
         not company_bank_account_doc.is_company_account
         or company_bank_account_doc.bank_account_no
-        not in CompanyConstants.PAYABLE_ACCOUNTS["REIMBURSEMENT_BANK_ACCOUNT"]
+        not in CompanyConstants.REIMBURSEMENT_BANK_ACCOUNT
     ):
         frappe.throw(_("Company bank account selected is not supported"))
 
