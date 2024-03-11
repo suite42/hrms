@@ -57,6 +57,15 @@ frappe.ui.form.on('Employee Advance', {
 	},
 
 	refresh: function(frm) {
+		if(frm.doc.status =="Draft" && frm.doc.docstatus ===0){
+			frm.set_query('approver_1', () => {
+				return {
+					query: 'hrms.overrides.custom_employee_advance.get_all_managers',
+				};
+			});
+		}
+		
+		
 		var submit_button_required = false;
 		var cancel_button_requried = false;
 		
@@ -103,8 +112,9 @@ frappe.ui.form.on('Employee Advance', {
 							label: __('Mode Of Payment'),
 							fieldname: 'mode_of_payment',
 							fieldtype: 'Data',
-							options: modeOfPayment,
+							default: modeOfPayment,
 							reqd:1,
+							read_only: 1,
 						},
 						{
 							label: __('Comapny Bank Account'),
@@ -341,3 +351,4 @@ frappe.ui.form.on('Employee Advance', {
 		});
 	}
 });
+

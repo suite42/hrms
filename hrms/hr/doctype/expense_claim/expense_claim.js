@@ -208,6 +208,14 @@ frappe.ui.form.on("Expense Claim", {
 	refresh: function(frm) {
 		frm.trigger("toggle_fields");
 
+		if(frm.doc.status =="Draft" && frm.doc.docstatus ===0){
+			frm.set_query('approver_1', () => {
+				return {
+					query: 'hrms.overrides.custom_employee_advance.get_all_managers',
+				};
+			});
+		}
+
 		var statusArray = ["Pending Payment", "Paid", "Cancelled"]
 		if(frm.doc.docstatus > 0 && statusArray.includes(frm.doc.status)) {
 			frm.add_custom_button(__('Accounting Ledger'), function() {
