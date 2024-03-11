@@ -259,6 +259,27 @@ class CustomEmployeeAdvance(EmployeeAdvance):
 
 @frappe.whitelist()
 @handle_exceptions_with_readable_message
+def get_all_managers():
+    managers_list = frappe.db.get_list(
+        "Has Role",
+        filters={
+            "role": [
+                "in",
+                [RoleConstants.EXPENSE_APPROVER1_ROLE, RoleConstants.EXPENSE_APPROVER2_ROLE],
+            ],
+            "parenttype": "User",
+        },
+        fields=["parent"],
+        pluck="parent",
+        ignore_permissions=True,
+    )
+    if not managers_list:
+        frappe.throw(_("No Managers presents"))
+    return managers_list
+
+
+@frappe.whitelist()
+@handle_exceptions_with_readable_message
 def next_state(doc_name):
     employee_advance_doc = frappe.get_doc("Employee Advance", doc_name)
     if employee_advance_doc.status == EmployeeAdvanceConstants.DRAFT:
@@ -286,7 +307,7 @@ def create_payment_entry(doc_name, values):
 
     payment_values = frappe._dict(json.loads(values))
 
-    if payment_values.paid_amount <= 0:
+    if payment_values.total_amount <= 0:
         frappe.throw(_("Paid Amount should be greater than 0"))
 
     current_date = datetime.now()
@@ -311,7 +332,7 @@ def create_payment_entry(doc_name, values):
     bank_cash_account = bank_cash_doc.name
     bank_account_currency = bank_cash_doc.account_currency
 
-    paid_to = employee_advance_doc.advance_account()
+    paid_to = employee_advance_doc.advance_account
 
     paid_to_account_currency = get_account_details(paid_to, frappe.utils.nowdate()).get(
         "account_currency"
