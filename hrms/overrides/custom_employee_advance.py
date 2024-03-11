@@ -248,6 +248,7 @@ class CustomEmployeeAdvance(EmployeeAdvance):
     def on_cancel(self):
         self.status = EmployeeAdvanceConstants.CANCELLED
         self.state_transtition_check()
+        self.save(ignore_permissions=True)
 
     @frappe.whitelist()
     def cancel_doc(self):
@@ -255,6 +256,27 @@ class CustomEmployeeAdvance(EmployeeAdvance):
         self.status = EmployeeAdvanceConstants.CANCELLED
         self.save(ignore_permissions=True)
         self.submit()
+
+
+@frappe.whitelist()
+@handle_exceptions_with_readable_message
+def get_all_managers():
+    managers_list = frappe.db.get_list(
+        "Has Role",
+        filters={
+            "role": [
+                "in",
+                [RoleConstants.EXPENSE_APPROVER1_ROLE, RoleConstants.EXPENSE_APPROVER2_ROLE],
+            ],
+            "parenttype": "User",
+        },
+        fields=["parent"],
+        pluck="parent",
+        ignore_permissions=True,
+    )
+    if not managers_list:
+        frappe.throw(_("No Managers presents"))
+    return managers_list
 
 
 @frappe.whitelist()
@@ -286,7 +308,7 @@ def create_payment_entry(doc_name, values):
 
     payment_values = frappe._dict(json.loads(values))
 
-    if payment_values.paid_amount <= 0:
+    if payment_values.total_amount <= 0:
         frappe.throw(_("Paid Amount should be greater than 0"))
 
     current_date = datetime.now()
@@ -302,8 +324,7 @@ def create_payment_entry(doc_name, values):
         company_bank_account_doc = frappe.get_doc("Bank Account", payment_values.from_account)
         if (
             not company_bank_account_doc.is_company_account
-            or company_bank_account_doc.account
-            not in CompanyConstants.PAYABLE_ACCOUNTS["REIMBURSEMENT_BANK_ACCOUNT"]
+            or company_bank_account_doc.bank_account_no not in CompanyConstants.REIMBURSEMENT_BANK_ACCOUNT
         ):
             frappe.throw(_("Company bank account selected is not supported"))
         bank_cash_doc = frappe.get_doc("Account", company_bank_account_doc.account)
@@ -311,7 +332,7 @@ def create_payment_entry(doc_name, values):
     bank_cash_account = bank_cash_doc.name
     bank_account_currency = bank_cash_doc.account_currency
 
-    paid_to = employee_advance_doc.advance_account()
+    paid_to = employee_advance_doc.advance_account
 
     paid_to_account_currency = get_account_details(paid_to, frappe.utils.nowdate()).get(
         "account_currency"
