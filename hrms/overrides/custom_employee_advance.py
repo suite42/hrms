@@ -248,6 +248,7 @@ class CustomEmployeeAdvance(EmployeeAdvance):
     def on_cancel(self):
         self.status = EmployeeAdvanceConstants.CANCELLED
         self.state_transtition_check()
+        self.save(ignore_permissions=True)
 
     @frappe.whitelist()
     def cancel_doc(self):
