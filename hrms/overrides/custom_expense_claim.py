@@ -479,7 +479,7 @@ class CustomExpenseClaim(ExpenseClaim):
         self.status = ExpenseClaimConstants.CANCELLED
         self.state_transition_check()
         self.update_claimed_amount_in_employee_advance()
-        self.save(ignore_permissions=True)
+        self.db_set("status", ExpenseClaimConstants.CANCELLED)
 
     # overriding as update_reimbursed_amount function is calling to set status
     def set_status(self, update=False):

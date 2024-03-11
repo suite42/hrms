@@ -248,7 +248,7 @@ class CustomEmployeeAdvance(EmployeeAdvance):
     def on_cancel(self):
         self.status = EmployeeAdvanceConstants.CANCELLED
         self.state_transtition_check()
-        self.save(ignore_permissions=True)
+        self.db_set("status", EmployeeAdvanceConstants.CANCELLED)
 
     @frappe.whitelist()
     def cancel_doc(self):
@@ -324,7 +324,8 @@ def create_payment_entry(doc_name, values):
         company_bank_account_doc = frappe.get_doc("Bank Account", payment_values.from_account)
         if (
             not company_bank_account_doc.is_company_account
-            or company_bank_account_doc.bank_account_no not in CompanyConstants.REIMBURSEMENT_BANK_ACCOUNT
+            or company_bank_account_doc.bank_account_no
+            not in CompanyConstants.REIMBURSEMENT_BANK_ACCOUNT
         ):
             frappe.throw(_("Company bank account selected is not supported"))
         bank_cash_doc = frappe.get_doc("Account", company_bank_account_doc.account)
