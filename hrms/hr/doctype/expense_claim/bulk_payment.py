@@ -133,10 +133,7 @@ def bulk_payment(url):
             employee_doc.company, "Employee", employee_doc.name, frappe.utils.nowdate()
         )
 
-        if (
-            row["Sending Account Number"]
-            not in CompanyConstants.PAYABLE_ACCOUNTS["REIMBURSEMENT_BANK_ACCOUNT"]
-        ):
+        if row["Sending Account Number"] not in CompanyConstants.REIMBURSEMENT_BANK_ACCOUNT:
             frappe.throw(_(f"Account Number added is not supported currently"))
 
         company_bank_account_exists = frappe.db.get_list(

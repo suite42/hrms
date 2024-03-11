@@ -57,6 +57,15 @@ frappe.ui.form.on('Employee Advance', {
 	},
 
 	refresh: function(frm) {
+		frm.events.get_all_managers(frm);
+		frm.set_query('approver_1', function() {
+			return {
+				filters: {
+					name: ["in", frm.fields_dict['UserList']]
+				}
+			};
+		});
+		
 		var submit_button_required = false;
 		var cancel_button_requried = false;
 		
@@ -103,8 +112,9 @@ frappe.ui.form.on('Employee Advance', {
 							label: __('Mode Of Payment'),
 							fieldname: 'mode_of_payment',
 							fieldtype: 'Data',
-							options: modeOfPayment,
+							default: modeOfPayment,
 							reqd:1,
+							read_only: 1,
 						},
 						{
 							label: __('Comapny Bank Account'),
@@ -148,6 +158,20 @@ frappe.ui.form.on('Employee Advance', {
 			});
 		}
 
+	},
+
+	get_all_managers: function(frm){
+		frappe.call({
+			method: 'hrms.overrides.custom_employee_advance.get_all_managers',
+			callback: function(response) {
+				if (response.message) {
+					console.log(response.message)
+					frm.fields_dict['UserList']= response.message;
+				}else{
+					frapp.throw("Error Fetching Approvers")
+				}
+			}
+		});
 	},
 
 	get_company_bank_accounts: function(frm){
@@ -341,3 +365,4 @@ frappe.ui.form.on('Employee Advance', {
 		});
 	}
 });
+
