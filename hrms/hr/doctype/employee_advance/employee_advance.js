@@ -57,25 +57,14 @@ frappe.ui.form.on('Employee Advance', {
 	},
 
 	refresh: function(frm) {
-		frappe.call({
-			method: 'hrms.overrides.custom_employee_advance.get_all_managers',
-			callback: function(response) {
-				if (response.message) {
-					console.log(response.message)
-					frm.fields_dict['UserList']= response.message;
-				}else{
-					frapp.throw("Error Fetching Approvers")
-				}
-			}
-		});
-
-		frm.set_query('approver_1', function() {
-			return {
-				filters: {
-					name: ["in", frm.fields_dict['UserList']]
-				}
-			};
-		});
+		if(frm.doc.status =="Draft" && frm.doc.docstatus ===0){
+			frm.set_query('approver_1', () => {
+				return {
+					query: 'hrms.overrides.custom_employee_advance.get_all_managers',
+				};
+			});
+		}
+		
 		
 		var submit_button_required = false;
 		var cancel_button_requried = false;
@@ -362,23 +351,4 @@ frappe.ui.form.on('Employee Advance', {
 		});
 	}
 });
-
-// frappe.ui.form.on("Employee Advance", "onload", function(frm) {
-// 	frappe.call({
-// 		            method: 'hrms.overrides.custom_employee_advance.get_all_managers',
-// 		            callback: function(response) {
-// 		                if (response.message) {
-// 							console.log(response.message)
-// 		                    frm.fields_dict['UserList']= response.message;
-// 		                }else{
-// 							frapp.throw("Error Fetching Approvers")
-// 						}
-// 		            }
-// 		        });
-//     frm.fields_dict['approver_1'].get_query = function(doc, cdt, cdn) {
-//         return {
-//             filters: ["Has Role", "role", "in", ["L1 Expense Approver", "L2 Expense Approver"]]
-//         };
-//     };
-// });
 

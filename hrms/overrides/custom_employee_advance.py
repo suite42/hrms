@@ -260,24 +260,30 @@ class CustomEmployeeAdvance(EmployeeAdvance):
 
 @frappe.whitelist()
 @handle_exceptions_with_readable_message
-def get_all_managers():
-    managers_list = frappe.db.get_list(
-        "Has Role",
-        filters={
-            "role": [
-                "in",
-                [RoleConstants.EXPENSE_APPROVER1_ROLE, RoleConstants.EXPENSE_APPROVER2_ROLE],
-            ],
-            "parenttype": "User",
-        },
-        fields=["parent"],
-        pluck="parent",
-        ignore_permissions=True,
-    )
-    if not managers_list:
-        frappe.throw(_("No Managers presents"))
-    return managers_list
+def get_all_managers(doctype, txt, searchfield, start, page_len, filters):
+    if doctype != "User":
+        frappe.throw(_(f"Unhandled doctype: {doctype}"))
 
+    filters = [
+        [
+            "Has Role",
+            "role",
+            "in",
+            [RoleConstants.EXPENSE_APPROVER1_ROLE, RoleConstants.EXPENSE_APPROVER2_ROLE],
+        ]
+    ]
+    if txt:
+        filters.append(["name", "like", f"%{txt}%"])
+    managers_list = set(
+        frappe.get_list(
+            "User",
+            filters=filters,
+            fields=["name"],
+            as_list=True,
+            ignore_permissions=True,
+        )
+    )
+    return managers_list
 
 @frappe.whitelist()
 @handle_exceptions_with_readable_message
