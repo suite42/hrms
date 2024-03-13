@@ -2,7 +2,7 @@ import frappe
 from frappe import _
 from frappe.utils.csvutils import build_csv_response
 import pandas as pd
-from apps.hrms.hrms.suite42_utils.common_functions import (
+from hrms.suite42_utils.common_functions import (
     user_has_role,
     handle_exceptions_with_readable_message,
 )
@@ -90,6 +90,8 @@ def bulk_download(company, account):
             employee_bank_account_doc = frappe.get_doc(
                 "Bank Account", employee_bank_account_exists[0]
             )
+            if not employee_bank_account_doc.bank_account_no:
+                frappe.throw(_(f"For Employee {employee_name} no bank account number present"))
 
         # create Rows
         payment_type = ""

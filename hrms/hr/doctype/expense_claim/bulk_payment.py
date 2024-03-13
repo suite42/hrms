@@ -6,7 +6,7 @@ from datetime import datetime
 from io import StringIO
 import requests
 
-from apps.hrms.hrms.suite42_utils.common_functions import (
+from hrms.suite42_utils.common_functions import (
     user_has_role,
     handle_exceptions_with_readable_message,
 )
