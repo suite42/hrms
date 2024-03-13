@@ -90,6 +90,8 @@ def bulk_download(company, account):
             employee_bank_account_doc = frappe.get_doc(
                 "Bank Account", employee_bank_account_exists[0]
             )
+            if not employee_bank_account_doc.bank_account_no:
+                frappe.throw(_(f"For Employee {employee_name} No Bank Account No present"))
 
         # create Rows
         payment_type = ""
