@@ -64,7 +64,7 @@ def create_reimbursement_task(
     task = task.insert()
     args = {
         "assign_to_me": 0,
-        "assign_to": ["dinakar@suite42.in"],
+        "assign_to": assigned_users,
         "date": task.exp_end_date,
         "priority": task.priority,
         "description": task.subject,
