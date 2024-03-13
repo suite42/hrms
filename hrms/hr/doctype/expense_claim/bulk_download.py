@@ -2,7 +2,7 @@ import frappe
 from frappe import _
 from frappe.utils.csvutils import build_csv_response
 import pandas as pd
-from apps.hrms.hrms.suite42_utils.common_functions import (
+from hrms.suite42_utils.common_functions import (
     user_has_role,
     handle_exceptions_with_readable_message,
 )
