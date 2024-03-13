@@ -272,6 +272,7 @@ def get_all_managers(doctype, txt, searchfield, start, page_len, filters):
             [RoleConstants.EXPENSE_APPROVER1_ROLE, RoleConstants.EXPENSE_APPROVER2_ROLE],
         ]
     ]
+    txt = txt.strip()
     if txt:
         filters.append(["name", "like", f"%{txt}%"])
     managers_list = set(
