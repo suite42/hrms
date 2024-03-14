@@ -8,15 +8,19 @@
  "field_order": [
   "naming_series",
   "employee",
-  "employee_name",
+  "expense_category",
+  "mmt_id",
   "department",
   "column_break_5",
-  "expense_category",
+  "employee_name",
+  "status",
   "is_overriden",
   "expense_approver",
   "approval_status",
   "delivery_trip",
   "is_paid",
+  "advance_payments",
+  "advances",
   "expense_details",
   "expenses",
   "sb1",
@@ -30,10 +34,7 @@
   "grand_total",
   "total_claimed_amount",
   "total_amount_reimbursed",
-  "advance_payments",
-  "advances",
   "section_break_16",
-  "posting_date",
   "vehicle_log",
   "task",
   "cb1",
@@ -51,11 +52,13 @@
   "dimension_col_break",
   "cost_center",
   "more_details",
-  "status",
+  "posting_date",
   "amended_from",
   "is_submit_and_cancel",
   "expense_category_flow",
-  "employee_supplier"
+  "employee_supplier",
+  "help_tab",
+  "help_html"
  ],
  "fields": [
   {
@@ -78,6 +81,7 @@
    "oldfieldname": "employee",
    "oldfieldtype": "Link",
    "options": "Employee",
+   "read_only_depends_on": "eval:!cur_frm.is_new();",
    "reqd": 1,
    "search_index": 1
   },
@@ -122,7 +126,6 @@
    "search_index": 1
   },
   {
-   "allow_on_submit": 1,
    "fieldname": "total_claimed_amount",
    "fieldtype": "Currency",
    "in_list_view": 1,
@@ -135,6 +138,7 @@
    "width": "160px"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "total_sanctioned_amount",
    "fieldtype": "Currency",
    "label": "Total Sanctioned Amount",
@@ -182,6 +186,7 @@
    "label": "Posting Date",
    "oldfieldname": "posting_date",
    "oldfieldtype": "Date",
+   "read_only_depends_on": "eval:!cur_frm.is_new();",
    "reqd": 1
   },
   {
@@ -258,6 +263,8 @@
    "oldfieldname": "company",
    "oldfieldtype": "Link",
    "options": "Company",
+   "permlevel": 1,
+   "read_only_depends_on": "eval:!cur_frm.is_new();",
    "remember_last_selected_value": 1,
    "reqd": 1
   },
@@ -282,13 +289,15 @@
    "fieldtype": "Link",
    "label": "Payable Account",
    "options": "Account",
-   "permlevel": 1
+   "permlevel": 1,
+   "read_only_depends_on": "eval:!cur_frm.is_new();"
   },
   {
    "fieldname": "cost_center",
    "fieldtype": "Link",
    "label": "Cost Center",
-   "options": "Cost Center"
+   "options": "Cost Center",
+   "read_only_depends_on": "eval:!cur_frm.is_new();"
   },
   {
    "collapsible": 1,
@@ -305,7 +314,7 @@
    "in_list_view": 1,
    "label": "Status",
    "no_copy": 1,
-   "options": "Draft\nPaid\nSubmitted\nCancelled\nPending Approval\nPending Approval By Admin\nPending Approval By HR L1\nPending Approval By HR L2\nPending Purchase Invoice\nPurchase Invoice Linked\nPending Payment\nPaid",
+   "options": "Draft\nPaid\nSubmitted\nCancelled\nPending Approval\nPending Approval By Admin L1\nPending Approval By Admin L2\nPending Approval By HR L1\nPending Approval By HR L2\nPending Purchase Invoice\nPurchase Invoice Linked\nPending Payment\nPaid",
    "print_hide": 1,
    "read_only": 1
   },
@@ -337,6 +346,7 @@
    "permlevel": 2
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "total_advance_amount",
    "fieldtype": "Currency",
    "label": "Total Advance Amount",
@@ -368,6 +378,7 @@
    "fieldtype": "Section Break"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "grand_total",
    "fieldtype": "Currency",
    "in_list_view": 1,
@@ -399,7 +410,9 @@
    "fieldtype": "Link",
    "label": "Approver",
    "options": "User",
-   "reqd": 1
+   "permlevel": 1,
+   "read_only": 1,
+   "read_only_depends_on": "eval:!cur_frm.is_new();"
   },
   {
    "default": "0",
@@ -436,13 +449,29 @@
    "fieldname": "employee_supplier",
    "fieldtype": "Data",
    "label": "Employee Supplier"
+  },
+  {
+   "fieldname": "mmt_id",
+   "fieldtype": "Link",
+   "label": "Travel Request ID",
+   "options": "S42 Travel Request"
+  },
+  {
+   "fieldname": "help_tab",
+   "fieldtype": "Tab Break",
+   "label": "Help"
+  },
+  {
+   "fieldname": "help_html",
+   "fieldtype": "HTML",
+   "label": "Help HTML"
   }
  ],
  "icon": "fa fa-money",
  "idx": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-02-20 17:57:44.334225",
+ "modified": "2024-04-01 15:47:10.786067",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Expense Claim",
@@ -478,7 +507,7 @@
   },
   {
    "color": "Orange",
-   "title": "Pending Approval By Admin"
+   "title": "Pending Approval By Admin L1"
   },
   {
    "color": "Orange",
@@ -499,6 +528,10 @@
   {
    "color": "Blue",
    "title": "Purchase Invoice Linked"
+  },
+  {
+   "color": "Orange",
+   "title": "Pending Approval By Admin L2"
   }
  ],
  "timeline_field": "employee",

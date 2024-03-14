@@ -18,21 +18,22 @@ from hrms.suite42_utils.reimbursement_constants import (
     CompanyConstants,
     EmployeeConstant,
     TaskTypeConstatns,
+    ExpenseCategoryConstants,
 )
 
 from frappe.utils import cstr, flt
 import frappe
 from frappe import _
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 class CustomEmployeeAdvance(EmployeeAdvance):
     def validate(self):
         self.validate_employee_type()
-        self.check_sanctioned_amount()
-        self.validate_approver()
         self.state_transtition_check()
+        self.validate_mmit_id()
+        self.validate_travel_date()
         # used when we are updating the document in a state
         old_doc = self.get_doc_before_save()
         if old_doc is not None and old_doc.status == self.status:
@@ -45,10 +46,59 @@ class CustomEmployeeAdvance(EmployeeAdvance):
                     or frappe.session.user == "Administrator"
                 ):
                     frappe.throw(_("Only the Added approver can edit the document"))
+                self.check_sanctioned_amount()
+        
+        self.advance_account = CompanyConstants.PAYABLE_ACCOUNTS[self.company][
+            "advance_payable_account"
+        ]
+        self.add_approver()
+        self.validate_approver()
+
+    def add_approver(self):
+        employee_doc = frappe.get_doc("Employee", self.employee)
+        if self.advance_amount >= RoleConstants.ADVANCE_AMOUNT:
+            self.approver_1 = employee_doc.expense_approver_2
         else:
-            self.advance_account = CompanyConstants.PAYABLE_ACCOUNTS[self.company][
-                "advance_payable_account"
-            ]
+            self.approver_1 = employee_doc.expense_approver
+
+    def validate_travel_date(self):
+        from_date = datetime.strptime(str(self.from_date), "%Y-%m-%d")
+        to_date = datetime.strptime(str(self.to_date), "%Y-%m-%d")
+        if from_date > to_date:
+            frappe.throw(_("From Date should be less than To Date"))
+
+    def check_advance_amount(self):
+        from_date = datetime.strptime(str(self.from_date), "%Y-%m-%d")
+        to_date = datetime.strptime(str(self.to_date), "%Y-%m-%d")
+        no_of_days = to_date.day - from_date.day + 1
+        amount_allowed_for_the_current_trip = (
+            no_of_days * EmployeeAdvanceConstants.ALLOWED_AMOUNT_PER_DAY
+        )
+        old_doc = self.get_doc_before_save()
+        if old_doc.status == EmployeeAdvanceConstants.PENDING_APPROVAL_BY_ADMIN_L2:
+            if self.sanctioned_amount > amount_allowed_for_the_current_trip:
+                if not self.is_date_override:
+                    frappe.throw(
+                        _(
+                            f"Sanctioned amount {self.sanctioned_amount} should be less than total amount {amount_allowed_for_the_current_trip} allowed for {no_of_days} Days, select the Date override checkbox before approving"
+                        )
+                    )
+
+    def validate_mmit_id(self):
+        if self.expense_category in ExpenseCategoryConstants.EXPENSE_CATEGORY_LIST:
+            if not self.mmt_id:
+                frappe.throw(
+                    _(
+                        f'Travel Request ID should be attached for Expense category "{self.expense_category}"'
+                    )
+                )
+        else:
+            if self.mmt_id:
+                frappe.throw(
+                    _(
+                        f'Travel Request ID should not be attached for Expense category "{self.expense_category}"'
+                    )
+                )
 
     def validate_employee_type(self):
         employee_doc = frappe.get_doc("Employee", self.employee)
@@ -59,6 +109,7 @@ class CustomEmployeeAdvance(EmployeeAdvance):
 
     def on_update_after_submit(self):
         self.state_transtition_check()
+        self.check_advance_amount()
 
     def state_transtition_check(self):
         old_doc = self.get_doc_before_save()
@@ -85,7 +136,8 @@ class CustomEmployeeAdvance(EmployeeAdvance):
                     write=1,
                     flags={"ignore_share_permission": True},
                 )
-            elif self.status == EmployeeAdvanceConstants.PENDING_APPROVAL_BY_HR:
+                self.check_advance_amount()
+            elif self.status == EmployeeAdvanceConstants.PENDING_APPROVAL_BY_ADMIN_L2:
                 if old_doc.status not in [EmployeeAdvanceConstants.PENDING_APPROVAL]:
                     frappe.throw(_(f"Invalid State Transition to state {self.status}"))
                 if not (
@@ -96,11 +148,25 @@ class CustomEmployeeAdvance(EmployeeAdvance):
                 mark_tasks_as_completed(
                     "Employee Advance", self.name, TaskTypeConstatns.APPROVE_EMPLOYEE_ADVANCE
                 )
+                employee_bank_details = frappe.db.get_value(
+                    "Bank Account",
+                    {"party_type": "Employee", "party": self.employee},
+                    ["bank_account_no", "ifsc"],
+                )
+                if employee_bank_details:
+                    self.employee_bank_account_no = employee_bank_details[0]
+                    self.employee_bank_ifsc = employee_bank_details[0]
+                self.check_advance_amount()
             elif self.status == EmployeeAdvanceConstants.PENDING_PAYMENT:
-                if old_doc.status not in [EmployeeAdvanceConstants.PENDING_APPROVAL_BY_HR]:
+                if old_doc.status not in [EmployeeAdvanceConstants.PENDING_APPROVAL_BY_ADMIN_L2]:
                     frappe.throw(_(f"Invalid State Transition to state {self.status}"))
-                if not user_has_role(frappe.session.user, RoleConstants.HR_L2_EXPENSE_ROLE):
-                    frappe.throw(_("Only user having HR L2 Expense Role can approve the document"))
+                if not user_has_role(frappe.session.user, RoleConstants.OFFICE_ADMIN_L2_ROLE):
+                    frappe.throw(
+                        _(
+                            f"Only user having {RoleConstants.OFFICE_ADMIN_L2_ROLE} Role can approve the document"
+                        )
+                    )
+                self.check_advance_amount()
             elif self.status == EmployeeAdvanceConstants.PAID:
                 if old_doc.status not in [
                     EmployeeAdvanceConstants.PENDING_PAYMENT,
@@ -134,7 +200,7 @@ class CustomEmployeeAdvance(EmployeeAdvance):
                     EmployeeAdvanceConstants.DRAFT,
                     EmployeeAdvanceConstants.PENDING_APPROVAL,
                     EmployeeAdvanceConstants.PENDING_PAYMENT,
-                    EmployeeAdvanceConstants.PENDING_APPROVAL_BY_HR,
+                    EmployeeAdvanceConstants.PENDING_APPROVAL_BY_ADMIN_L2,
                 ]:
                     frappe.throw(_(f"Invalid State Transition to state {self.status}"))
                 if (
@@ -149,12 +215,12 @@ class CustomEmployeeAdvance(EmployeeAdvance):
                 ):
                     frappe.throw(_(f"Can be Canceled either by {self.approver_1} or by Admin"))
                 elif (
-                    old_doc.status == EmployeeAdvanceConstants.PENDING_APPROVAL_BY_HR
-                    and not user_has_role(frappe.session.user, RoleConstants.HR_L2_EXPENSE_ROLE)
+                    old_doc.status == EmployeeAdvanceConstants.PENDING_APPROVAL_BY_ADMIN_L2
+                    and not user_has_role(frappe.session.user, RoleConstants.OFFICE_ADMIN_L2_ROLE)
                 ):
                     frappe.throw(
                         _(
-                            f"Only user having {RoleConstants.HR_L2_EXPENSE_ROLE} can cancel the document"
+                            f"Only user having {RoleConstants.OFFICE_ADMIN_L2_ROLE} can cancel the document"
                         )
                     )
                 elif (
@@ -171,6 +237,8 @@ class CustomEmployeeAdvance(EmployeeAdvance):
         if self.status == EmployeeAdvanceConstants.PENDING_APPROVAL:
             if self.sanctioned_amount > self.advance_amount:
                 frappe.throw(_("Cannot put Sanctioned amount more than the advanced amount"))
+            if self.sanctioned_amount == 0:
+                frappe.throw(_("sanctioned amount cannot be zero"))
 
     def validate_approver(self):
         user_id = frappe.get_list(
@@ -242,6 +310,8 @@ class CustomEmployeeAdvance(EmployeeAdvance):
         pass
 
     def on_submit(self):
+        if self.status != EmployeeAdvanceConstants.PENDING_APPROVAL_BY_ADMIN_L2:
+            frappe.throw(_(f"Cannot Submit in state {self.status}"))
         if self.is_submit_and_cancel:
             self.cancel()
 
@@ -286,6 +356,7 @@ def get_all_managers(doctype, txt, searchfield, start, page_len, filters):
     )
     return managers_list
 
+
 @frappe.whitelist()
 @handle_exceptions_with_readable_message
 def next_state(doc_name):
@@ -294,15 +365,30 @@ def next_state(doc_name):
         employee_advance_doc.status = EmployeeAdvanceConstants.PENDING_APPROVAL
         employee_advance_doc.save()
     elif employee_advance_doc.status == EmployeeAdvanceConstants.PENDING_APPROVAL:
-        employee_advance_doc.status = EmployeeAdvanceConstants.PENDING_APPROVAL_BY_HR
+        employee_advance_doc.status = EmployeeAdvanceConstants.PENDING_APPROVAL_BY_ADMIN_L2
         employee_advance_doc.save(ignore_permissions=True)
         employee_advance_doc.submit()
-    elif employee_advance_doc.status == EmployeeAdvanceConstants.PENDING_APPROVAL_BY_HR:
+    elif employee_advance_doc.status == EmployeeAdvanceConstants.PENDING_APPROVAL_BY_ADMIN_L2:
         employee_advance_doc.status = EmployeeAdvanceConstants.PENDING_PAYMENT
-        employee_advance_doc.save()
+        employee_advance_doc.save(ignore_permissions=True)
     else:
         frappe.throw(_("Unhandelled State Transition"))
     return f"Successfully transitioned to the State {employee_advance_doc.status}"
+
+
+@frappe.whitelist()
+@handle_exceptions_with_readable_message
+def check_sanctioned_amount_is_above_limit(frm_date, to_date, sanctioned_amount):
+    from_date = datetime.strptime(str(frm_date), "%Y-%m-%d")
+    to__date = datetime.strptime(str(to_date), "%Y-%m-%d")
+    no_of_days = to__date.day - from_date.day + 1
+    amount_allowed_for_the_current_trip = (
+        no_of_days * EmployeeAdvanceConstants.ALLOWED_AMOUNT_PER_DAY
+    )
+    if int(sanctioned_amount) > amount_allowed_for_the_current_trip:
+        return True
+    else:
+        return False
 
 
 @frappe.whitelist()
@@ -321,10 +407,14 @@ def create_payment_entry(doc_name, values):
     current_date = datetime.now()
     current_month = current_date.month
     current_date = current_date.replace(month=current_month - 1, day=5)
+
     payment_date = datetime.strptime(payment_values.payment_date, "%Y-%m-%d")
     if payment_date < current_date:
-        frappe.throw(_(f"Expense Date Cannot be before  {current_date.strftime('%Y-%m-%d')}"))
+        frappe.throw(_(f"Payment Date Cannot be before  {current_date.strftime('%Y-%m-%d')}"))
 
+    bank = None
+    bank_account = None
+    bank_account_no = None
     if payment_values.mode_of_payment == "Cash":
         bank_cash_doc = frappe.get_doc("Account", payment_values.from_account)
     else:
@@ -336,6 +426,9 @@ def create_payment_entry(doc_name, values):
         ):
             frappe.throw(_("Company bank account selected is not supported"))
         bank_cash_doc = frappe.get_doc("Account", company_bank_account_doc.account)
+        bank = company_bank_account_doc.bank
+        bank_account = company_bank_account_doc.name
+        bank_account_no = company_bank_account_doc.bank_account_no
 
     bank_cash_account = bank_cash_doc.name
     bank_account_currency = bank_cash_doc.account_currency
@@ -346,6 +439,17 @@ def create_payment_entry(doc_name, values):
         "account_currency"
     )
 
+    employee_bank_account = frappe.db.get_list(
+        "Bank Account",
+        filters={"party_type": "Employee", "party": employee_advance_doc.employee},
+        pluck="name",
+        ignore_permissions=True,
+    )
+
+    if not employee_bank_account:
+        frappe.throw(_("Please Create Employee Bank Account First to create a payment entry"))
+    employee_bank_account = employee_bank_account[0]
+
     payment_entry = frappe.get_doc(
         {
             "doctype": "Payment Entry",
@@ -355,6 +459,7 @@ def create_payment_entry(doc_name, values):
             "party_type": "Employee",
             "party": employee_advance_doc.employee,
             "party_name": employee_advance_doc.employee_name,
+            "party_bank_account": employee_bank_account,
             "paid_from": bank_cash_account,
             "paid_from_account_currency": bank_account_currency,
             "paid_to": payment_values.to_chart_Account,
@@ -378,6 +483,9 @@ def create_payment_entry(doc_name, values):
             ],
             "reference_no": payment_values.reference_no,
             "reference_date": payment_values.payment_date,
+            "bank": bank,
+            "bank_account": bank_account,
+            "bank_account_no": bank_account_no,
         }
     )
     payment_entry_doc = payment_entry.insert(ignore_permissions=True)
