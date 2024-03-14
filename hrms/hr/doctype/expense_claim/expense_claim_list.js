@@ -48,9 +48,7 @@ function importButtonFunction(listview){
             },
 			callback: function(r) {
 				if(r.message){
-					reload_doc();
-					frappe.msgprint(__(r.message));
-					return r.message
+					frappe.msgprint(__("Bulk Payment Done Successfully"));
 				}else{
 					frappe.throw("Error While Doing Bulk Payment")
 				}
