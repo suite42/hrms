@@ -10,16 +10,20 @@
   "naming_series",
   "employee",
   "employee_name",
+  "mmt_id",
   "department",
   "column_break_4",
   "expense_category",
   "posting_date",
-  "currency",
   "exchange_rate",
   "repay_unclaimed_amount_from_salary",
   "section_break_8",
   "purpose",
+  "is_date_override",
+  "from_date",
+  "to_date",
   "column_break_11",
+  "currency",
   "advance_amount",
   "approver_1",
   "sanctioned_amount",
@@ -34,7 +38,9 @@
   "column_break_18",
   "advance_account",
   "mode_of_payment",
-  "is_submit_and_cancel"
+  "is_submit_and_cancel",
+  "employee_bank_account_no",
+  "employee_bank_ifsc"
  ],
  "fields": [
   {
@@ -129,7 +135,7 @@
    "fieldtype": "Select",
    "label": "Status",
    "no_copy": 1,
-   "options": "Draft\nPaid\nCancelled\nPartly Claimed\nClaimed\nPending Approval\nPending Approval By Admin\nPending Approval By HR\nPending Payment",
+   "options": "Draft\nPaid\nCancelled\nPartly Claimed\nClaimed\nPending Approval\nPending Approval By Admin L2\nPending Payment",
    "read_only": 1
   },
   {
@@ -190,10 +196,8 @@
    "read_only": 1
   },
   {
-   "depends_on": "eval:(doc.docstatus==1 || doc.employee)",
    "fieldname": "currency",
    "fieldtype": "Link",
-   "hidden": 1,
    "label": "Currency",
    "options": "Currency"
   },
@@ -209,7 +213,7 @@
    "fieldname": "sanctioned_amount",
    "fieldtype": "Currency",
    "label": "Sanctioned Amount",
-   "options": "Currency",
+   "options": "currency",
    "permlevel": 1
   },
   {
@@ -217,7 +221,7 @@
    "fieldtype": "Link",
    "label": "Approver 1",
    "options": "User",
-   "reqd": 1
+   "permlevel": 1
   },
   {
    "default": "0",
@@ -232,11 +236,51 @@
    "label": "Expense Category",
    "options": "Expense Category",
    "reqd": 1
+  },
+  {
+   "fieldname": "mmt_id",
+   "fieldtype": "Link",
+   "label": "Make My Trip Record",
+   "options": "Make My Trip"
+  },
+  {
+   "fieldname": "from_date",
+   "fieldtype": "Date",
+   "label": "From Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "to_date",
+   "fieldtype": "Date",
+   "label": "To Date",
+   "reqd": 1
+  },
+  {
+   "allow_in_quick_entry": 1,
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "is_date_override",
+   "fieldtype": "Check",
+   "in_preview": 1,
+   "label": "Date Override",
+   "permlevel": 3
+  },
+  {
+   "fieldname": "employee_bank_account_no",
+   "fieldtype": "Data",
+   "label": "Bank Account Number",
+   "read_only": 1
+  },
+  {
+   "fieldname": "employee_bank_ifsc",
+   "fieldtype": "Data",
+   "label": "Bank IFSC Number",
+   "read_only": 1
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2024-02-16 15:05:59.023830",
+ "modified": "2024-03-26 11:36:18.412544",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Employee Advance",
@@ -290,7 +334,7 @@
   },
   {
    "color": "Orange",
-   "title": "Pending Approval By Admin"
+   "title": "Pending Approval By Admin L2"
   },
   {
    "color": "Orange",
