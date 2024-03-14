@@ -192,3 +192,5 @@ def bulk_payment(url):
             expense_claim_doc.status = ExpenseClaimConstants.PAID
             expense_claim_doc.total_amount_reimbursed = expense_claim_doc.grand_total
             expense_claim_doc.save(ignore_permissions=True)
+    
+    return "Bulk Payment Done Successfullly"

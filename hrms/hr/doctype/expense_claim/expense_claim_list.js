@@ -47,8 +47,12 @@ function importButtonFunction(listview){
                 url: values.import_file
             },
 			callback: function(r) {
-				frm.reload_doc();
-				return r.message
+				if(r.message){
+					frappe.msgprint(__("Bulk Payment Done Successfully"));
+				}else{
+					frappe.throw("Error While Doing Bulk Payment")
+				}
+				
 			}
 		});
 	},__("Upload File"))
