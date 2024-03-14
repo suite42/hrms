@@ -64,8 +64,6 @@ frappe.ui.form.on('Employee Advance', {
 				};
 			});
 		}
-		
-		
 		var submit_button_required = false;
 		var cancel_button_requried = false;
 		
@@ -87,7 +85,7 @@ frappe.ui.form.on('Employee Advance', {
 			});
 		});
 
-		if(frm.doc.status === "Pending Payment"){
+		if(frm.doc.status === "Pending Payment" && frm.doc.currency == "INR"){
 			frm.events.get_mode_of_payments(frm)
 			frm.events.get_company_bank_accounts(frm)
 			var modeOfPayment = null
@@ -117,7 +115,7 @@ frappe.ui.form.on('Employee Advance', {
 							read_only: 1,
 						},
 						{
-							label: __('Comapny Bank Account'),
+							label: __('Company Bank Account'),
 							fieldname: 'from_account',
 							fieldtype: 'Select',
 							options: frm.fields_dict['from_account'].options,
@@ -142,6 +140,8 @@ frappe.ui.form.on('Employee Advance', {
 							label: __('Reference No'),
 							fieldname: 'reference_no',
 							fieldtype: 'Data',
+							reqd:(modeOfPayment == "Cash")?0:1,
+							hidden:(modeOfPayment == "Cash")?1:0
 						},
 						{
 							label: __('Amount'),
@@ -151,6 +151,10 @@ frappe.ui.form.on('Employee Advance', {
 							read_only: 1,
 						}
 					], function(values){
+						var current_date = frappe.datetime.get_today()
+						if (values.payment_date > current_date){
+							frappe.throw("Payment Date cannot be a future Date")
+						}
 						frm.events.create_payment_entry(frm, values);
 						frm.refresh()
 					},__("Enter Payment Details"))
