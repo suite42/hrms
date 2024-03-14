@@ -9,32 +9,43 @@
  "field_order": [
   "naming_series",
   "employee",
-  "employee_name",
+  "expense_category",
+  "mmt_id",
   "department",
   "column_break_4",
-  "expense_category",
-  "posting_date",
+  "employee_name",
+  "status",
   "currency",
   "exchange_rate",
   "repay_unclaimed_amount_from_salary",
   "section_break_8",
-  "purpose",
-  "column_break_11",
+  "from_date",
   "advance_amount",
-  "approver_1",
+  "is_date_override",
+  "per_day_amount_html",
   "sanctioned_amount",
   "paid_amount",
-  "pending_amount",
   "claimed_amount",
   "return_amount",
+  "column_break_11",
+  "to_date",
+  "approver_1",
+  "purpose",
+  "pending_amount",
   "section_break_7",
-  "status",
   "company",
   "amended_from",
   "column_break_18",
   "advance_account",
   "mode_of_payment",
-  "is_submit_and_cancel"
+  "posting_date",
+  "is_submit_and_cancel",
+  "column_break_33",
+  "employee_bank_account_no",
+  "employee_bank_ifsc",
+  "section_break_36",
+  "help_tab",
+  "help_html"
  ],
  "fields": [
   {
@@ -51,6 +62,7 @@
    "in_list_view": 1,
    "label": "Employee",
    "options": "Employee",
+   "read_only_depends_on": "eval:!cur_frm.is_new();",
    "reqd": 1
   },
   {
@@ -69,6 +81,7 @@
    "fieldtype": "Date",
    "in_list_view": 1,
    "label": "Posting Date",
+   "read_only_depends_on": "eval:!cur_frm.is_new();",
    "reqd": 1
   },
   {
@@ -129,7 +142,7 @@
    "fieldtype": "Select",
    "label": "Status",
    "no_copy": 1,
-   "options": "Draft\nPaid\nCancelled\nPartly Claimed\nClaimed\nPending Approval\nPending Approval By Admin\nPending Approval By HR\nPending Payment",
+   "options": "Draft\nPaid\nCancelled\nPartly Claimed\nClaimed\nPending Approval\nPending Approval By Admin L2\nPending Payment",
    "read_only": 1
   },
   {
@@ -137,6 +150,8 @@
    "fieldtype": "Link",
    "label": "Company",
    "options": "Company",
+   "permlevel": 1,
+   "read_only_depends_on": "eval:!cur_frm.is_new();",
    "reqd": 1
   },
   {
@@ -158,7 +173,8 @@
    "ignore_user_permissions": 1,
    "label": "Advance Account",
    "options": "Account",
-   "permlevel": 1
+   "permlevel": 1,
+   "read_only_depends_on": "eval:!cur_frm.is_new();"
   },
   {
    "fieldname": "mode_of_payment",
@@ -190,12 +206,11 @@
    "read_only": 1
   },
   {
-   "depends_on": "eval:(doc.docstatus==1 || doc.employee)",
    "fieldname": "currency",
    "fieldtype": "Link",
-   "hidden": 1,
    "label": "Currency",
-   "options": "Currency"
+   "options": "Currency",
+   "read_only": 1
   },
   {
    "depends_on": "currency",
@@ -206,18 +221,20 @@
    "precision": "9"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "sanctioned_amount",
    "fieldtype": "Currency",
    "label": "Sanctioned Amount",
-   "options": "Currency",
+   "options": "currency",
    "permlevel": 1
   },
   {
    "fieldname": "approver_1",
    "fieldtype": "Link",
-   "label": "Approver 1",
+   "label": "Approver",
    "options": "User",
-   "reqd": 1
+   "permlevel": 1,
+   "read_only_depends_on": "eval:!cur_frm.is_new();"
   },
   {
    "default": "0",
@@ -232,11 +249,74 @@
    "label": "Expense Category",
    "options": "Expense Category",
    "reqd": 1
+  },
+  {
+   "fieldname": "mmt_id",
+   "fieldtype": "Link",
+   "label": "Travel Request ID",
+   "options": "S42 Travel Request"
+  },
+  {
+   "fieldname": "from_date",
+   "fieldtype": "Date",
+   "label": "From Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "to_date",
+   "fieldtype": "Date",
+   "label": "To Date",
+   "reqd": 1
+  },
+  {
+   "allow_in_quick_entry": 1,
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "is_date_override",
+   "fieldtype": "Check",
+   "in_preview": 1,
+   "label": "Override Per Day Amount",
+   "permlevel": 3
+  },
+  {
+   "fieldname": "employee_bank_account_no",
+   "fieldtype": "Data",
+   "label": "Bank Account Number",
+   "read_only": 1
+  },
+  {
+   "fieldname": "employee_bank_ifsc",
+   "fieldtype": "Data",
+   "label": "Bank IFSC Number",
+   "read_only": 1
+  },
+  {
+   "fieldname": "help_tab",
+   "fieldtype": "Tab Break",
+   "label": "Help"
+  },
+  {
+   "fieldname": "help_html",
+   "fieldtype": "HTML",
+   "label": "Help HTML"
+  },
+  {
+   "fieldname": "column_break_33",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_36",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "per_day_amount_html",
+   "fieldtype": "HTML",
+   "label": "Note"
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2024-02-16 15:05:59.023830",
+ "modified": "2024-04-01 18:55:47.168438",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Employee Advance",
@@ -290,7 +370,7 @@
   },
   {
    "color": "Orange",
-   "title": "Pending Approval By Admin"
+   "title": "Pending Approval By Admin L2"
   },
   {
    "color": "Orange",

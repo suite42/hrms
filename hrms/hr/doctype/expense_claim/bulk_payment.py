@@ -154,6 +154,9 @@ def bulk_payment(url):
             company_bank_account_doc = frappe.get_doc(
                 "Bank Account", company_bank_account_exists[0]
             )
+            bank = company_bank_account_doc.bank
+            bank_account = company_bank_account_doc.name
+            bank_account_no = company_bank_account_doc.bank_account_no
 
         bank_cash_account = frappe.get_doc("Account", company_bank_account_doc.account).name
 
@@ -163,6 +166,18 @@ def bulk_payment(url):
             "account_currency"
         )
         refrence_date = datetime.strptime(row["Maker DateTime"].split(" ")[0], "%d/%m/%Y").date()
+
+        employee_bank_account = frappe.db.get_list(
+            "Bank Account",
+            filters={"party_type": "Employee", "party": employee_doc.name},
+            pluck="name",
+            ignore_permissions=True,
+        )
+
+        if not employee_bank_account:
+            frappe.throw(_("Please Create Employee Bank Account First to create a payment entry"))
+        employee_bank_account = employee_bank_account[0]
+
         payment_entry_doc = frappe.get_doc(
             {
                 "doctype": "Payment Entry",
@@ -172,6 +187,7 @@ def bulk_payment(url):
                 "party_type": "Employee",
                 "party": employee_doc.name,
                 "party_name": employee_doc.employee_name,
+                "party_bank_account": employee_bank_account,
                 "paid_from": bank_cash_account,
                 "paid_from_account_currency": bank_account_currency,
                 "paid_to": paid_to,
@@ -183,6 +199,9 @@ def bulk_payment(url):
                 "references": refrence_list,
                 "reference_no": row["UTR SrNo"],
                 "reference_date": refrence_date,
+                "bank": bank,
+                "bank_account": bank_account,
+                "bank_account_no": bank_account_no
             }
         )
         payment_entry_doc.insert(ignore_permissions=True).name
@@ -192,3 +211,5 @@ def bulk_payment(url):
             expense_claim_doc.status = ExpenseClaimConstants.PAID
             expense_claim_doc.total_amount_reimbursed = expense_claim_doc.grand_total
             expense_claim_doc.save(ignore_permissions=True)
+
+    return "Bulk Payment Done Successfullly"
