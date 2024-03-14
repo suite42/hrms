@@ -1,0 +1,70 @@
+<div>
+    <h3>Create an Expense Claimn</h3> 
+
+    <p>In this module, employee’s can create an expense claim for work related expenses and get it reimbursed. </p>
+    <p>One can create an expense claim , submit bills, request for reimbursement and view the final payment status.</p>
+    <p> If you have received any cash advances for a specific purpose (Travel, stay etc) , you can settle the cash advances against the expense as well.</p>
+        The Expense Category Available currently are:
+        <ul>
+            <li> <b>Business Expense Local -:</b>  General expenses by employees for day to day business like food, fuel, phone bills (within the office city )</li>
+            <li> <b>Business Expense Outstation -:</b> Expenses related to Travels outside of bangalore. These are expenses against planned travels, either national or international.  </li>
+            <li> <b>Employee Engagement Expense -:</b>  Claims against HR policies , like “Celebrating You”/“Fuel your Mind and Body” </li>
+            <li> <b>Office Maintenance and Admin Expense -:</b>  Expenses related to office maintenance and admin. This is not relevant for most employees except those taking part in office maintenance and related activities.</li>
+        </ul>
+        <br>
+        <p><span style="color: red;">**</span>If Expense Category is <b>“Business Expense Outstation”</b> then employee has to mandatorily select a “Travel Request Id” in the form. If you do not know the “Travel Request Id”  or it is not created, you can get it created by the Office Admin Team. (Pavitra/ Didarul). 
+        <br>
+        <p>Approvers are auto filled based on organisation hierarchy.</p>
+        <br>
+        <p>Add your bills and claims amount at the Expenses section and save it . Once you review it, you need to click on “Send for Approval”  button at the top to submit the expense claim .</p>
+        <hr>
+        <h2><b>Some Important Points to keep in Mind</b></h2>
+        <p>On an Employee Level, Once he/she clicks on <b>“Send for Approval”</b> the expense claim will be shared to the approver and you will get a popup stating document shared successfully.  And the Status field will be updated from <b>Draft</b> to <b>“Pending approval”</b>. It is your responsibility to get the expense claim approved by your manager/skip manager as selected by the system. </p>
+        <hr>
+        <h3><b>Expense Claim Flow</b></h3>
+        <b>There are two flows involved in Reimbursement based on these broad categories.</b>
+        <ui>
+            <li> Business Expense Local : Flow 1</li>
+            <li> Business Expense Outstation : Flow 1</li>
+            <li> Employee Engagement Expense (Eg: Fuel your Mind): Flow 2</li>
+            <li> Office Mantainence and Admin Expense : Flow 1</li>
+        </ui>
+        <p></p>
+        <p><b>Flow1:</b></p>
+        <li>Employee creates an Expense Claim request with the amount he needs and Depending upon the amount either Manager L1 or L2 will be prefilled.</li>
+        <li>Any advances paid and un-utilised for the employee will be auto tagged to this expense claim.</li>
+        <li>Manager either approves or cancels the request. He can also change the sanctioned amount and make it less than or equal to the claimed amount.</li>
+        <li>Admin L1 can  edit the sanctioned amount and either approves or cancels the request.</li>
+        <li>Admin L2 can  edit the sanctioned amount and either approves or cancels the request.</li>
+        <li>All the Admin L2 approved requests will be paid by the finance team either by CASH or CMS. (Finance team cannot cancel before or after payment), Partial Payments are not supported.</li>
+        <li>Expense claims once paid cannot be cancelled by anyone.</li>
+
+        <p></p>
+        <p><b>Flow2:(employee engagement expenses)</b></p>
+        <li>Employee creates an Expense Claim request with the amount he needs and Depending upon the amount either Manager L1 or L2 will be prefilled.</li>
+        <li>For this flow there will be no employee advance present or tagged in the expense claim.</li>
+        <li>Manager either approves or cancels the request. He can also change the sanctioned amount and make it less than or equal to the claimed amount.</li>
+        <li>HR L1 either approves or cancels the request.</li>
+        <li>HR L2 either approves or cancels the request.</li>
+        <li>All the HR L2 approved requests will be paid by the finance team.</li>
+        <li>Expense claims once paid cannot be cancelled by anyone</li>
+        <hr>
+        <h3><b>For Finance Team:</b></h3>
+        <p>Once An expense Claim Reaches to <b>Pending Payment</b> Status then the finance team can make a payment entry for it.</p>
+        <p><span style="color: red;">**</span>No partial payment is supported.</p>
+        <p>Finance person will have two options either to Bulk Pay a set of expense claim or settle expense claim at employee level.</p>
+        <p><b>To Settle Expense Claim via Bulk option</b></p>
+        <li>In the list view, There will be an <b>Export</b> Button Available.</li>
+        <li>Once you click on it one popup will be shown where you need to select from which company bank account you will pay, For now only allowed comapny bank is Kotak Mahindra Bank account with accout no (5946999821).</li>
+        <li>After pressing Submit Button once .csv file will be generated having list of employee with its bank details and the amount you need to pay.</li>
+        <li>After payment is done, now to reflect in ERP you need to upload the .csv file by clicking the Import button.</li>
+        <p></p>
+        <p><b>To Employee level Expense Claim</b></p>
+        <li>
+            Whichever Expense Claim of an employee in <b>Pending Payment</b> state needs to be settled, open it and one <b>Pay</b> button will be shown.
+        </li>
+        <li>A Popup will be open once you click on it.</li>
+        <li>First need you need to select the <b>Mode of Payment</b>, then once you submit then another popup will be open.</li>
+        <li> In this popup you need to fill in the <b>Company Bank Account</b>, <b>Payment Date</b>, <b>Refrence No</b>, <b>Amount</b> and submit it.</li>
+
+</div>

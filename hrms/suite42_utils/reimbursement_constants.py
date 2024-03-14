@@ -4,10 +4,18 @@ class RoleConstants:
     HR_L1_EXPENSE_ROLE = "HR L1 Expense Approver"
     HR_L2_EXPENSE_ROLE = "HR L2 Expense Approver"
     FINANCE_ROLE = "Finance Team Expense Approver"
-    OFFICE_ADMIN_ROLE = "Office Admin Expense Approver"
+    OFFICE_ADMIN_L1_ROLE = "Office Admin L1 Expense Approver"
+    OFFICE_ADMIN_L2_ROLE = "Office Admin L2 Expense Approver"
     EXPENSE_AMOUNT = 5000
     ADVANCE_AMOUNT = 5000
     EXPENSE_APPROVE_DATE = 5
+    REMOVE_USER_PERMISSIONS_FOR_ROLES = [
+        "HR L1 Expense Approver",
+        "HR L2 Expense Approver",
+        "Finance Team Expense Approver",
+        "Office Admin L1 Expense Approver",
+        "Office Admin L2 Expense Approver",
+    ]
 
 
 class CompanyConstants:
@@ -42,15 +50,14 @@ class EmployeeConstant:
 
 
 class ExpenseCategoryConstants:
-    BUSSINESS_EXP = "Business Expenses"
-    OFFICE_AND_ADMIN_EXP = "Office maintenance and Admin Expenses"
-    EMPLOYEE_ENG_EXP = "Employee Engagement Expense"
+    EXPENSE_CATEGORY_LIST = ["Business Expenses Outstation"]
 
 
 class ExpenseClaimConstants:
     DRAFT = "Draft"
     PENDING_APPROVAL = "Pending Approval"
-    PENDING_APPROVAL_BY_ADMIN = "Pending Approval By Admin"
+    PENDING_APPROVAL_BY_ADMIN_L1 = "Pending Approval By Admin L1"
+    PENDING_APPROVAL_BY_ADMIN_L2 = "Pending Approval By Admin L2"
     PENDING_APPROVAL_BY_HR_L1 = "Pending Approval By HR L1"
     PENDING_APPROVAL_BY_HR_L2 = "Pending Approval By HR L2"
     PENDING_PURCHASE_INVOICE = "Pending Purchase Invoice"
@@ -63,10 +70,11 @@ class ExpenseClaimConstants:
 class EmployeeAdvanceConstants:
     DRAFT = "Draft"
     PENDING_APPROVAL = "Pending Approval"
-    PENDING_APPROVAL_BY_ADMIN = "Pending Approval By Admin"
+    PENDING_APPROVAL_BY_ADMIN_L2 = "Pending Approval By Admin L2"
     PENDING_APPROVAL_BY_HR = "Pending Approval By HR"
     PENDING_PAYMENT = "Pending Payment"
     CLAIMED = "Claimed"
     PARTLY_CLAIMED = "Partly Claimed"
     CANCELLED = "Cancelled"
     PAID = "Paid"
+    ALLOWED_AMOUNT_PER_DAY = 1000
