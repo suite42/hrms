@@ -135,7 +135,7 @@
    "fieldtype": "Select",
    "label": "Status",
    "no_copy": 1,
-   "options": "Draft\nPaid\nCancelled\nPartly Claimed\nClaimed\nPending Approval\nPending Approval By Admin L2\nPending Approval By HR\nPending Payment",
+   "options": "Draft\nPaid\nCancelled\nPartly Claimed\nClaimed\nPending Approval\nPending Approval By Admin L2\nPending Payment",
    "read_only": 1
   },
   {
@@ -220,7 +220,8 @@
    "fieldname": "approver_1",
    "fieldtype": "Link",
    "label": "Approver 1",
-   "options": "User"
+   "options": "User",
+   "permlevel": 1
   },
   {
    "default": "0",
@@ -276,7 +277,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2024-03-18 15:08:18.236513",
+ "modified": "2024-03-18 16:40:41.349184",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Employee Advance",

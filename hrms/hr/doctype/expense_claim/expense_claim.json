@@ -306,7 +306,7 @@
    "in_list_view": 1,
    "label": "Status",
    "no_copy": 1,
-   "options": "Draft\nPaid\nSubmitted\nCancelled\nPending Approval\nPending Approval By Admin\nPending Approval By HR L1\nPending Approval By HR L2\nPending Purchase Invoice\nPurchase Invoice Linked\nPending Payment\nPaid",
+   "options": "Draft\nPaid\nSubmitted\nCancelled\nPending Approval\nPending Approval By Admin L1\nPending Approval By Admin L2\nPending Approval By HR L1\nPending Approval By HR L2\nPending Purchase Invoice\nPurchase Invoice Linked\nPending Payment\nPaid",
    "print_hide": 1,
    "read_only": 1
   },
@@ -400,7 +400,8 @@
    "fieldtype": "Link",
    "label": "Approver",
    "options": "User",
-   "reqd": 1
+   "permlevel": 1,
+   "read_only": 1
   },
   {
    "default": "0",
@@ -449,7 +450,7 @@
  "idx": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-03-18 13:36:14.202422",
+ "modified": "2024-03-18 17:10:45.362996",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Expense Claim",

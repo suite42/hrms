@@ -33,9 +33,6 @@ from datetime import datetime
 class CustomExpenseClaim(ExpenseClaim):
     def validate(self):
         self.validate_employee_type()
-        self.add_approver()
-        self.validate_approver()
-        self.validate_sanctioned_amount()
         self.calculate_total_amount()
         self.validate_advances()
         self.state_transition_check()
@@ -46,20 +43,32 @@ class CustomExpenseClaim(ExpenseClaim):
             if self.status == "Draft":
                 if frappe.session.user != self.owner:
                     frappe.throw(_("Only Owner can edit in Draft State"))
+                if self.mmt_id:
+                    if len(self.advances) != len(old_doc.advances):
+                        frappe.throw(
+                            _(
+                                "Cannot Delete Employee Advances, Refresh The Document To undo changes"
+                            )
+                        )
             elif self.status == "Pending Approval":
                 if not (
                     frappe.session.user == self.approver_1
                     or frappe.session.user == "Administrator"
                 ):
                     frappe.throw(_("Only the Added approver can edit the document"))
+                self.validate_sanctioned_amount()
         else:
+            self.add_approver()
+            if self.expense_category_flow == "Flow1":
+                self.add_advances()
             self.payable_account = CompanyConstants.PAYABLE_ACCOUNTS[self.company][
                 "reimbursement_payable_account"
             ]
+        self.validate_approver()
 
     def add_approver(self):
         employee_doc = frappe.get_doc("Employee", self.employee)
-        if self.total_advance_amount > RoleConstants.ADVANCE_AMOUNT:
+        if self.total_claimed_amount > RoleConstants.ADVANCE_AMOUNT:
             self.approver_1 = employee_doc.expense_approver_2
         else:
             self.approver_1 = employee_doc.expense_approver
@@ -72,6 +81,46 @@ class CustomExpenseClaim(ExpenseClaim):
                         f"MMT Record should be attached for Expense category {self.expense_category}"
                     )
                 )
+
+    def validate_advances(self):
+        self.total_advance_amount = 0
+
+        for d in self.get("advances"):
+            self.round_floats_in(d)
+
+            ref_doc = frappe.db.get_value(
+                "Employee Advance",
+                d.employee_advance,
+                ["posting_date", "paid_amount", "claimed_amount", "advance_account"],
+                as_dict=1,
+            )
+            d.posting_date = ref_doc.posting_date
+            d.advance_account = ref_doc.advance_account
+            d.advance_paid = ref_doc.paid_amount
+            d.unclaimed_amount = flt(ref_doc.paid_amount) - flt(ref_doc.claimed_amount)
+
+            if d.allocated_amount and flt(d.allocated_amount) > flt(d.unclaimed_amount):
+                frappe.throw(
+                    _(
+                        "Row {0}# Allocated amount {1} cannot be greater than unclaimed amount {2}"
+                    ).format(d.idx, d.allocated_amount, d.unclaimed_amount)
+                )
+
+            self.total_advance_amount += flt(d.allocated_amount)
+
+        if self.total_advance_amount:
+            self.round_floats_in(self, ["total_advance_amount"])
+            precision = self.precision("total_advance_amount")
+            amount_with_taxes = flt(
+                (
+                    flt(self.total_sanctioned_amount, precision)
+                    + flt(self.total_taxes_and_charges, precision)
+                ),
+                precision,
+            )
+
+            if self.total_advance_amount > self.total_claimed_amount:
+                frappe.throw(_("total advance amount Cannot be greater than total claimed amount"))
 
     def validate_employee_type(self):
         employee_doc = frappe.get_doc("Employee", self.employee)
@@ -267,7 +316,7 @@ class CustomExpenseClaim(ExpenseClaim):
                     write=1,
                     flags={"ignore_share_permission": True},
                 )
-                self.add_advances()
+                # self.add_advances()
                 if self.is_overriden:
                     self.check_expense_date()
             elif self.status == ExpenseClaimConstants.PENDING_APPROVAL_BY_ADMIN_L1:
@@ -409,7 +458,7 @@ class CustomExpenseClaim(ExpenseClaim):
             filters={
                 "status": ["in", ["Partly Claimed", "Paid"]],
                 "employee": self.employee,
-                "mmit_id": self.mmit_id,
+                "mmt_id": self.mmt_id if self.mmt_id else ["is", "not set"],
             },
             pluck="name",
             ignore_permissions=True,

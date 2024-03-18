@@ -25,15 +25,13 @@ from frappe.utils import cstr, flt
 import frappe
 from frappe import _
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 class CustomEmployeeAdvance(EmployeeAdvance):
     def validate(self):
         self.validate_employee_type()
         self.check_sanctioned_amount()
-        self.add_approver()
-        self.validate_approver()
         self.state_transtition_check()
         self.validate_mmit_id()
         # used when we are updating the document in a state
@@ -51,20 +49,22 @@ class CustomEmployeeAdvance(EmployeeAdvance):
                 ):
                     frappe.throw(_("Only the Added approver can edit the document"))
         else:
+            self.add_approver()
             self.advance_account = CompanyConstants.PAYABLE_ACCOUNTS[self.company][
                 "advance_payable_account"
             ]
+        self.validate_approver()
 
     def add_approver(self):
         employee_doc = frappe.get_doc("Employee", self.employee)
-        if self.advance_amount > RoleConstants.ADVANCE_AMOUNT:
+        if self.advance_amount >= RoleConstants.ADVANCE_AMOUNT:
             self.approver_1 = employee_doc.expense_approver_2
         else:
             self.approver_1 = employee_doc.expense_approver
 
     def check_advance_amount(self):
-        from_date = self.from_date
-        to_date = self.to_date
+        from_date = datetime.strptime(self.from_date, "%Y-%m-%d")
+        to_date = datetime.strptime(self.to_date, "%Y-%m-%d")
         if from_date > to_date:
             frappe.throw(_("From Date should be less than To Date"))
         no_of_days = to_date.day - from_date.day + 1
