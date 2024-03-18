@@ -10,6 +10,7 @@
   "employee",
   "employee_name",
   "department",
+  "mmt_id",
   "column_break_5",
   "expense_category",
   "is_overriden",
@@ -436,13 +437,19 @@
    "fieldname": "employee_supplier",
    "fieldtype": "Data",
    "label": "Employee Supplier"
+  },
+  {
+   "fieldname": "mmt_id",
+   "fieldtype": "Link",
+   "label": "Make My Trip Record",
+   "options": "Make My Trip"
   }
  ],
  "icon": "fa fa-money",
  "idx": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-02-20 17:57:44.334225",
+ "modified": "2024-03-18 13:36:14.202422",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Expense Claim",
@@ -478,7 +485,7 @@
   },
   {
    "color": "Orange",
-   "title": "Pending Approval By Admin"
+   "title": "Pending Approval By Admin L1"
   },
   {
    "color": "Orange",
@@ -499,6 +506,10 @@
   {
    "color": "Blue",
    "title": "Purchase Invoice Linked"
+  },
+  {
+   "color": "Orange",
+   "title": "Pending Approval By Admin L2"
   }
  ],
  "timeline_field": "employee",
