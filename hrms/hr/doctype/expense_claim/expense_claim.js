@@ -281,7 +281,7 @@ frappe.ui.form.on("Expense Claim", {
 							read_only: 1,
 						},
 						{
-							label: __('Comapny Bank Account'),
+							label: __('Company Bank Account'),
 							fieldname: 'from_account',
 							fieldtype: 'Select',
 							options: frm.fields_dict['from_account'].options,

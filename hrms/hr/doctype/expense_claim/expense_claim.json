@@ -10,6 +10,7 @@
   "employee",
   "employee_name",
   "department",
+  "mmt_id",
   "column_break_5",
   "expense_category",
   "is_overriden",
@@ -122,7 +123,6 @@
    "search_index": 1
   },
   {
-   "allow_on_submit": 1,
    "fieldname": "total_claimed_amount",
    "fieldtype": "Currency",
    "in_list_view": 1,
@@ -135,6 +135,7 @@
    "width": "160px"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "total_sanctioned_amount",
    "fieldtype": "Currency",
    "label": "Total Sanctioned Amount",
@@ -305,7 +306,7 @@
    "in_list_view": 1,
    "label": "Status",
    "no_copy": 1,
-   "options": "Draft\nPaid\nSubmitted\nCancelled\nPending Approval\nPending Approval By Admin\nPending Approval By HR L1\nPending Approval By HR L2\nPending Purchase Invoice\nPurchase Invoice Linked\nPending Payment\nPaid",
+   "options": "Draft\nPaid\nSubmitted\nCancelled\nPending Approval\nPending Approval By Admin L1\nPending Approval By Admin L2\nPending Approval By HR L1\nPending Approval By HR L2\nPending Purchase Invoice\nPurchase Invoice Linked\nPending Payment\nPaid",
    "print_hide": 1,
    "read_only": 1
   },
@@ -337,6 +338,7 @@
    "permlevel": 2
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "total_advance_amount",
    "fieldtype": "Currency",
    "label": "Total Advance Amount",
@@ -368,6 +370,7 @@
    "fieldtype": "Section Break"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "grand_total",
    "fieldtype": "Currency",
    "in_list_view": 1,
@@ -399,7 +402,8 @@
    "fieldtype": "Link",
    "label": "Approver",
    "options": "User",
-   "reqd": 1
+   "permlevel": 1,
+   "read_only": 1
   },
   {
    "default": "0",
@@ -436,13 +440,19 @@
    "fieldname": "employee_supplier",
    "fieldtype": "Data",
    "label": "Employee Supplier"
+  },
+  {
+   "fieldname": "mmt_id",
+   "fieldtype": "Link",
+   "label": "Make My Trip Record",
+   "options": "Make My Trip"
   }
  ],
  "icon": "fa fa-money",
  "idx": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-02-20 17:57:44.334225",
+ "modified": "2024-03-19 09:14:52.632963",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Expense Claim",
@@ -478,7 +488,7 @@
   },
   {
    "color": "Orange",
-   "title": "Pending Approval By Admin"
+   "title": "Pending Approval By Admin L1"
   },
   {
    "color": "Orange",
@@ -499,6 +509,10 @@
   {
    "color": "Blue",
    "title": "Purchase Invoice Linked"
+  },
+  {
+   "color": "Orange",
+   "title": "Pending Approval By Admin L2"
   }
  ],
  "timeline_field": "employee",
