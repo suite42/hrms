@@ -142,11 +142,15 @@ class CustomExpenseClaim(ExpenseClaim):
     def on_update_after_submit(self):
         self.state_transition_check()
         old_doc = self.get_doc_before_save()
+        self.total_advance_amount = 0
         for d in self.get("advances"):
             self.total_advance_amount += flt(d.allocated_amount)
         if old_doc.total_advance_amount != self.total_advance_amount:
             self.update_claimed_amount_in_employee_advance()
-        self.calculate_grand_total()
+            self.db_set("total_advance_amount", self.total_advance_amount)
+        self.grand_total = flt(self.total_sanctioned_amount) - flt(self.total_advance_amount)
+        self.round_floats_in(self, ["grand_total"])
+        self.db_set("grand_total", self.grand_total)
 
     def state_transtition_check_for_flow2(self):
         old_doc = self.get_doc_before_save()
