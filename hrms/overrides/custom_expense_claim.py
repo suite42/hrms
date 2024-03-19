@@ -694,14 +694,10 @@ def create_payment_entry(doc_name, values):
             fields=["expense_date"],
             pluck="expense_date",
         )
-        if payment_values.mode_of_payment != "Cash":
-            max_date = max(expense_claim_details_dates)
-            if payment_date < max_date:
-                frappe.throw(
-                    _(
-                        f"Payment Date should me more than the max of expenses date for expense claim {expense_claim_doc.name}"
-                    )
-                )
+
+        max_date = max(expense_claim_details_dates)
+        if payment_date < max_date:
+            frappe.throw(_(f"Payment Date should me more than the max of expenses date for expense claim {expense_claim_doc.name}"))
 
         total_pending_amount += expense_claim_doc.grand_total
         remaining_amount = (

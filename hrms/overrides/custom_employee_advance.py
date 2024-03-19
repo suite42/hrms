@@ -373,10 +373,10 @@ def create_payment_entry(doc_name, values):
     current_date = datetime.now()
     current_month = current_date.month
     current_date = current_date.replace(month=current_month - 1, day=5)
-    if payment_values.mode_of_payment != "Cash":
-        payment_date = datetime.strptime(payment_values.payment_date, "%Y-%m-%d")
-        if payment_date < current_date:
-            frappe.throw(_(f"Payment Date Cannot be before  {current_date.strftime('%Y-%m-%d')}"))
+
+    payment_date = datetime.strptime(payment_values.payment_date, "%Y-%m-%d")
+    if payment_date < current_date:
+        frappe.throw(_(f"Payment Date Cannot be before  {current_date.strftime('%Y-%m-%d')}"))
 
     if payment_values.mode_of_payment == "Cash":
         bank_cash_doc = frappe.get_doc("Account", payment_values.from_account)
