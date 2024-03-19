@@ -69,6 +69,7 @@ class CustomExpenseClaim(ExpenseClaim):
                             f"Only allowed to edit sanction and advance amount in {self.status} state"
                         )
                     )
+                self.validate_sanctioned_amount()
         else:
             self.add_approver()
             self.payable_account = CompanyConstants.PAYABLE_ACCOUNTS[self.company][
@@ -692,6 +693,7 @@ def create_payment_entry(doc_name, values):
             filters={"parent": expense_claim_doc.name},
             fields=["expense_date"],
             pluck="expense_date",
+            ignore_permissions=True,
         )
 
         max_date = max(expense_claim_details_dates)
