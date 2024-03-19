@@ -34,14 +34,14 @@ class CustomEmployeeAdvance(EmployeeAdvance):
         self.check_sanctioned_amount()
         self.state_transtition_check()
         self.validate_mmit_id()
+        if self.is_date_override:
+            self.check_advance_amount()
         # used when we are updating the document in a state
         old_doc = self.get_doc_before_save()
         if old_doc is not None and old_doc.status == self.status:
             if self.status == "Draft":
                 if frappe.session.user != self.owner:
                     frappe.throw(_("Only Owner can edit in Draft State"))
-                if self.is_date_override:
-                    self.check_advance_amount()
             elif self.status == "Pending Approval":
                 if not (
                     frappe.session.user == self.approver_1
@@ -74,7 +74,7 @@ class CustomEmployeeAdvance(EmployeeAdvance):
         if self.advance_amount > amount_allowed_for_the_current_trip:
             frappe.throw(
                 _(
-                    f"Requested amount {self.advance_amount} should be less than total amount {amount_allowed_for_the_current_trip} allowed for {no_of_days} "
+                    f"Requested amount {self.advance_amount} should be less than total amount {amount_allowed_for_the_current_trip} allowed for {no_of_days} Days"
                 )
             )
 
