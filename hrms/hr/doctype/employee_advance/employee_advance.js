@@ -134,8 +134,7 @@ frappe.ui.form.on('Employee Advance', {
 							label: __('Payment Date'),
 							fieldname: 'payment_date',
 							fieldtype: 'Date',
-							reqd:(modeOfPayment == "Cash")?0:1,
-							hidden:(modeOfPayment == "Cash")?1:0
+							reqd:1,
 						},
 						{
 							label: __('Reference No'),
