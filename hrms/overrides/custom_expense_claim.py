@@ -34,20 +34,22 @@ class CustomExpenseClaim(ExpenseClaim):
     def validate(self):
         self.validate_employee_type()
         self.calculate_total_amount()
+        self.validate_sanctioned_amount()
         self.validate_advances()
         self.state_transition_check()
         self.calculate_grand_total()
-        self.validate_mmit_id()
+
         old_doc = self.get_doc_before_save()
         if old_doc is not None and old_doc.status == self.status:
             if self.status == "Draft":
                 if frappe.session.user != self.owner:
                     frappe.throw(_("Only Owner can edit in Draft State"))
-                if self.mmt_id:
-                    if len(self.advances) != len(old_doc.advances):
+                if self.expense_category_flow == "Flow2":
+                    self.set("advances", [])
+                    if self.mmt_id:
                         frappe.throw(
                             _(
-                                "Cannot Delete Employee Advances, Refresh The Document To undo changes"
+                                f"MMT Record Cannot be attached for expense category {self.expense_category}"
                             )
                         )
             elif self.status == "Pending Approval":
@@ -56,15 +58,27 @@ class CustomExpenseClaim(ExpenseClaim):
                     or frappe.session.user == "Administrator"
                 ):
                     frappe.throw(_("Only the Added approver can edit the document"))
-                self.validate_sanctioned_amount()
+                if (
+                    old_doc.total_sanctioned_amount == self.total_sanctioned_amount
+                    and old_doc.total_advance_amount == self.total_advance_amount
+                ):
+                    frappe.throw(
+                        _(
+                            f"Only allowed to edit sanction and advance amount in {self.status} state"
+                        )
+                    )
         else:
             self.add_approver()
-            if self.expense_category_flow == "Flow1":
-                self.add_advances()
             self.payable_account = CompanyConstants.PAYABLE_ACCOUNTS[self.company][
                 "reimbursement_payable_account"
             ]
+        if self.expense_category_flow == "Flow1" and (
+            not old_doc or old_doc.mmt_id != self.mmt_id
+        ):
+            self.set("advances", [])
+            self.add_advances()
         self.validate_approver()
+        self.validate_mmit_id()
 
     def add_approver(self):
         employee_doc = frappe.get_doc("Employee", self.employee)
@@ -81,46 +95,6 @@ class CustomExpenseClaim(ExpenseClaim):
                         f"MMT Record should be attached for Expense category {self.expense_category}"
                     )
                 )
-
-    def validate_advances(self):
-        self.total_advance_amount = 0
-
-        for d in self.get("advances"):
-            self.round_floats_in(d)
-
-            ref_doc = frappe.db.get_value(
-                "Employee Advance",
-                d.employee_advance,
-                ["posting_date", "paid_amount", "claimed_amount", "advance_account"],
-                as_dict=1,
-            )
-            d.posting_date = ref_doc.posting_date
-            d.advance_account = ref_doc.advance_account
-            d.advance_paid = ref_doc.paid_amount
-            d.unclaimed_amount = flt(ref_doc.paid_amount) - flt(ref_doc.claimed_amount)
-
-            if d.allocated_amount and flt(d.allocated_amount) > flt(d.unclaimed_amount):
-                frappe.throw(
-                    _(
-                        "Row {0}# Allocated amount {1} cannot be greater than unclaimed amount {2}"
-                    ).format(d.idx, d.allocated_amount, d.unclaimed_amount)
-                )
-
-            self.total_advance_amount += flt(d.allocated_amount)
-
-        if self.total_advance_amount:
-            self.round_floats_in(self, ["total_advance_amount"])
-            precision = self.precision("total_advance_amount")
-            amount_with_taxes = flt(
-                (
-                    flt(self.total_sanctioned_amount, precision)
-                    + flt(self.total_taxes_and_charges, precision)
-                ),
-                precision,
-            )
-
-            if self.total_advance_amount > self.total_claimed_amount:
-                frappe.throw(_("total advance amount Cannot be greater than total claimed amount"))
 
     def validate_employee_type(self):
         employee_doc = frappe.get_doc("Employee", self.employee)
@@ -167,6 +141,12 @@ class CustomExpenseClaim(ExpenseClaim):
 
     def on_update_after_submit(self):
         self.state_transition_check()
+        old_doc = self.get_doc_before_save()
+        for d in self.get("advances"):
+            self.total_advance_amount += flt(d.allocated_amount)
+        if old_doc.total_advance_amount != self.total_advance_amount:
+            self.update_claimed_amount_in_employee_advance()
+        self.calculate_grand_total()
 
     def state_transtition_check_for_flow2(self):
         old_doc = self.get_doc_before_save()
