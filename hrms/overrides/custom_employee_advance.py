@@ -31,7 +31,6 @@ from datetime import datetime, timedelta
 class CustomEmployeeAdvance(EmployeeAdvance):
     def validate(self):
         self.validate_employee_type()
-        self.check_sanctioned_amount()
         self.state_transtition_check()
         self.validate_mmit_id()
         if self.is_date_override:
@@ -48,11 +47,12 @@ class CustomEmployeeAdvance(EmployeeAdvance):
                     or frappe.session.user == "Administrator"
                 ):
                     frappe.throw(_("Only the Added approver can edit the document"))
+                self.check_sanctioned_amount()
         else:
-            self.add_approver()
             self.advance_account = CompanyConstants.PAYABLE_ACCOUNTS[self.company][
                 "advance_payable_account"
             ]
+        self.add_approver()
         self.validate_approver()
 
     def add_approver(self):
@@ -63,8 +63,8 @@ class CustomEmployeeAdvance(EmployeeAdvance):
             self.approver_1 = employee_doc.expense_approver
 
     def check_advance_amount(self):
-        from_date = datetime.strptime(self.from_date, "%Y-%m-%d")
-        to_date = datetime.strptime(self.to_date, "%Y-%m-%d")
+        from_date = datetime.strptime(str(self.from_date), "%Y-%m-%d")
+        to_date = datetime.strptime(str(self.to_date), "%Y-%m-%d")
         if from_date > to_date:
             frappe.throw(_("From Date should be less than To Date"))
         no_of_days = to_date.day - from_date.day + 1
@@ -220,6 +220,8 @@ class CustomEmployeeAdvance(EmployeeAdvance):
         if self.status == EmployeeAdvanceConstants.PENDING_APPROVAL:
             if self.sanctioned_amount > self.advance_amount:
                 frappe.throw(_("Cannot put Sanctioned amount more than the advanced amount"))
+            if self.sanctioned_amount == 0:
+                frappe.throw(_("sanctioned amount cannot be zero"))
 
     def validate_approver(self):
         user_id = frappe.get_list(
@@ -371,9 +373,10 @@ def create_payment_entry(doc_name, values):
     current_date = datetime.now()
     current_month = current_date.month
     current_date = current_date.replace(month=current_month - 1, day=5)
-    payment_date = datetime.strptime(payment_values.payment_date, "%Y-%m-%d")
-    if payment_date < current_date:
-        frappe.throw(_(f"Expense Date Cannot be before  {current_date.strftime('%Y-%m-%d')}"))
+    if payment_values.mode_of_payment != "Cash":
+        payment_date = datetime.strptime(payment_values.payment_date, "%Y-%m-%d")
+        if payment_date < current_date:
+            frappe.throw(_(f"Payment Date Cannot be before  {current_date.strftime('%Y-%m-%d')}"))
 
     if payment_values.mode_of_payment == "Cash":
         bank_cash_doc = frappe.get_doc("Account", payment_values.from_account)
