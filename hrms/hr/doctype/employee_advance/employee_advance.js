@@ -153,7 +153,7 @@ frappe.ui.form.on('Employee Advance', {
 					], function(values){
 						var current_date = frappe.datetime.get_today()
 						if (values.payment_date > current_date){
-							frappe.throw("Payment Date cannot be in the future")
+							frappe.throw("Payment Date cannot be a future Date")
 						}
 						frm.events.create_payment_entry(frm, values);
 						frm.refresh()

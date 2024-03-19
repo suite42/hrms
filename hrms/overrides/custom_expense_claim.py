@@ -33,6 +33,8 @@ from datetime import datetime
 class CustomExpenseClaim(ExpenseClaim):
     def validate(self):
         self.validate_employee_type()
+        if self.is_overriden:
+            self.check_expense_date()
         self.calculate_total_amount()
         self.validate_sanctioned_amount()
         self.validate_advances()
@@ -119,11 +121,13 @@ class CustomExpenseClaim(ExpenseClaim):
         current_month = current_date.month
         current_date = current_date.replace(month=current_month - 1, day=5)
         for expense in self.expenses:
-            expense_date = expense.expense_date
+            expense_date = datetime.strptime(str(expense.expense_date), "%Y-%m-%d").date()
             if expense_date < current_date:
                 frappe.throw(
                     _(f"Expense Date Cannot be before  {current_date.strftime('%Y-%m-%d')}")
                 )
+            if expense_date > datetime.now().date():
+                frappe.throw(_("Cannot Have Future Dated Expenses"))
 
     def state_transition_check(self):
         if self.expense_category_flow == "Flow1":
@@ -178,8 +182,6 @@ class CustomExpenseClaim(ExpenseClaim):
                     write=1,
                     flags={"ignore_share_permission": True},
                 )
-                if self.is_overriden:
-                    self.check_expense_date()
             elif self.status == ExpenseClaimConstants.PENDING_APPROVAL_BY_HR_L1:
                 if old_doc.status not in [ExpenseClaimConstants.PENDING_APPROVAL]:
                     frappe.throw(_(f"Invalid State Transition to state {self.status}"))
@@ -300,9 +302,6 @@ class CustomExpenseClaim(ExpenseClaim):
                     write=1,
                     flags={"ignore_share_permission": True},
                 )
-                # self.add_advances()
-                if self.is_overriden:
-                    self.check_expense_date()
             elif self.status == ExpenseClaimConstants.PENDING_APPROVAL_BY_ADMIN_L1:
                 if old_doc.status not in [ExpenseClaimConstants.PENDING_APPROVAL]:
                     frappe.throw(_(f"Invalid State Transition to state {self.status}"))

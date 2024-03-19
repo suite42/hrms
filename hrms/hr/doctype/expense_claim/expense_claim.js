@@ -332,7 +332,7 @@ frappe.ui.form.on("Expense Claim", {
 					], function(values){
 						var current_date = frappe.datetime.get_today()
 						if (values.payment_date > current_date){
-							frappe.throw("Payment Date cannot be in the future")
+							frappe.throw("Payment Date cannot be a future Date")
 						}
 						frm.events.create_payment_entry(frm, values);
 					},__("Enter Payment Details"))
