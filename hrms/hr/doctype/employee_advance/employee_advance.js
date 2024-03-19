@@ -134,12 +134,15 @@ frappe.ui.form.on('Employee Advance', {
 							label: __('Payment Date'),
 							fieldname: 'payment_date',
 							fieldtype: 'Date',
-							reqd:1,
+							reqd:(modeOfPayment == "Cash")?0:1,
+							hidden:(modeOfPayment == "Cash")?1:0
 						},
 						{
 							label: __('Reference No'),
 							fieldname: 'reference_no',
 							fieldtype: 'Data',
+							reqd:(modeOfPayment == "Cash")?0:1,
+							hidden:(modeOfPayment == "Cash")?1:0
 						},
 						{
 							label: __('Amount'),
@@ -149,6 +152,10 @@ frappe.ui.form.on('Employee Advance', {
 							read_only: 1,
 						}
 					], function(values){
+						var current_date = frappe.datetime.get_today()
+						if (values.payment_date > current_date){
+							frappe.throw("Payment Date cannot be in the future")
+						}
 						frm.events.create_payment_entry(frm, values);
 						frm.refresh()
 					},__("Enter Payment Details"))

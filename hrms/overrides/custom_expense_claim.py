@@ -654,7 +654,8 @@ def create_payment_entry(doc_name, values):
     if payment_values.paid_amount <= 0:
         frappe.throw(_("Paid Amount should be greater than 0"))
 
-    payment_date = datetime.strptime(payment_values.payment_date, "%Y-%m-%d").date()
+    if payment_values.mode_of_payment != "Cash":
+        payment_date = datetime.strptime(payment_values.payment_date, "%Y-%m-%d").date()
 
     party_details = get_party_details(
         doc.company, "Employee", doc.employee, frappe.utils.nowdate()
@@ -693,13 +694,14 @@ def create_payment_entry(doc_name, values):
             fields=["expense_date"],
             pluck="expense_date",
         )
-        max_date = max(expense_claim_details_dates)
-        if payment_date < max_date:
-            frappe.throw(
-                _(
-                    f"Payment Date should me more than the max of expenses date for expense claim {expense_claim_doc.name}"
+        if payment_values.mode_of_payment != "Cash":
+            max_date = max(expense_claim_details_dates)
+            if payment_date < max_date:
+                frappe.throw(
+                    _(
+                        f"Payment Date should me more than the max of expenses date for expense claim {expense_claim_doc.name}"
+                    )
                 )
-            )
 
         total_pending_amount += expense_claim_doc.grand_total
         remaining_amount = (
