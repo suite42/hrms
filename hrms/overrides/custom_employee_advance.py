@@ -86,6 +86,11 @@ class CustomEmployeeAdvance(EmployeeAdvance):
                         f"MMT Record should be attached for Expense category {self.expense_category}"
                     )
                 )
+        else:
+            if self.mmt_id:
+                frappe.throw(
+                    _(f"MMT Should not be attached for Expense Category {self.expense_category}")
+                )
 
     def validate_employee_type(self):
         employee_doc = frappe.get_doc("Employee", self.employee)
