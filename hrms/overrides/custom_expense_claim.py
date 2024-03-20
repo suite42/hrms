@@ -71,7 +71,6 @@ class CustomExpenseClaim(ExpenseClaim):
                     )
                 self.validate_sanctioned_amount()
         else:
-            self.add_approver()
             self.payable_account = CompanyConstants.PAYABLE_ACCOUNTS[self.company][
                 "reimbursement_payable_account"
             ]
@@ -80,6 +79,7 @@ class CustomExpenseClaim(ExpenseClaim):
         ):
             self.set("advances", [])
             self.add_advances()
+        self.add_approver()
         self.validate_approver()
         self.validate_mmit_id()
 
@@ -97,6 +97,11 @@ class CustomExpenseClaim(ExpenseClaim):
                     _(
                         f"MMT Record should be attached for Expense category {self.expense_category}"
                     )
+                )
+        else:
+            if self.mmt_id:
+                frappe.throw(
+                    _(f"MMT Should not be attached for Expense Category {self.expense_category}")
                 )
 
     def validate_employee_type(self):
@@ -191,6 +196,7 @@ class CustomExpenseClaim(ExpenseClaim):
                     or frappe.session.user == "Administrator"
                 ):
                     frappe.throw(_(f"Only the Added approver or Admin can approve the document"))
+                self.validate_sanctioned_amount()
                 mark_tasks_as_completed(
                     "Expense Claim", self.name, TaskTypeConstatns.APPROVE_EXPENSE_CLAIM
                 )
@@ -311,7 +317,7 @@ class CustomExpenseClaim(ExpenseClaim):
                     or frappe.session.user == "Administrator"
                 ):
                     frappe.throw(_("Only the added approver can approve the document"))
-
+                self.validate_sanctioned_amount()
                 mark_tasks_as_completed(
                     "Expense Claim", self.name, TaskTypeConstatns.APPROVE_EXPENSE_CLAIM
                 )
