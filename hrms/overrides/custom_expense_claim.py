@@ -42,7 +42,7 @@ class CustomExpenseClaim(ExpenseClaim):
 
         old_doc = self.get_doc_before_save()
         if old_doc is not None and old_doc.status == self.status:
-            if self.status == "Draft":
+            if self.status == ExpenseClaimConstants.DRAFT:
                 if frappe.session.user != self.owner:
                     frappe.throw(_("Only Owner can edit in Draft State"))
                 if self.expense_category_flow == "Flow2":
@@ -53,7 +53,7 @@ class CustomExpenseClaim(ExpenseClaim):
                                 f"MMT Record Cannot be attached for expense category {self.expense_category}"
                             )
                         )
-            elif self.status == "Pending Approval":
+            elif self.status == ExpenseClaimConstants.PENDING_APPROVAL:
                 if not (
                     frappe.session.user == self.approver_1
                     or frappe.session.user == "Administrator"
@@ -73,9 +73,7 @@ class CustomExpenseClaim(ExpenseClaim):
             self.payable_account = CompanyConstants.PAYABLE_ACCOUNTS[self.company][
                 "reimbursement_payable_account"
             ]
-        if self.expense_category_flow == "Flow1" and (
-            not old_doc or old_doc.mmt_id != self.mmt_id
-        ):
+        if self.expense_category_flow == "Flow1" and self.status == ExpenseClaimConstants.DRAFT:
             self.set("advances", [])
             self.add_advances()
         self.add_approver()
@@ -154,9 +152,8 @@ class CustomExpenseClaim(ExpenseClaim):
         self.total_advance_amount = 0
         for d in self.get("advances"):
             self.total_advance_amount += flt(d.allocated_amount)
-        if old_doc.total_advance_amount != self.total_advance_amount:
-            self.update_claimed_amount_in_employee_advance()
-            self.db_set("total_advance_amount", self.total_advance_amount)
+        self.update_claimed_amount_in_employee_advance()
+        self.db_set("total_advance_amount", self.total_advance_amount)
         self.grand_total = flt(self.total_sanctioned_amount) - flt(self.total_advance_amount)
         self.round_floats_in(self, ["grand_total"])
         self.db_set("grand_total", self.grand_total)
