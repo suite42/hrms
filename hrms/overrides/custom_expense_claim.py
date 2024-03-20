@@ -36,7 +36,6 @@ class CustomExpenseClaim(ExpenseClaim):
         if self.is_overriden:
             self.check_expense_date()
         self.calculate_total_amount()
-        self.validate_sanctioned_amount()
         self.validate_advances()
         self.state_transition_check()
         self.calculate_grand_total()
