@@ -152,7 +152,6 @@ class CustomExpenseClaim(ExpenseClaim):
         self.total_advance_amount = 0
         for d in self.get("advances"):
             self.total_advance_amount += flt(d.allocated_amount)
-        self.update_claimed_amount_in_employee_advance()
         self.db_set("total_advance_amount", self.total_advance_amount)
         self.grand_total = flt(self.total_sanctioned_amount) - flt(self.total_advance_amount)
         self.round_floats_in(self, ["grand_total"])
@@ -335,6 +334,7 @@ class CustomExpenseClaim(ExpenseClaim):
                             f"Only user having {RoleConstants.OFFICE_ADMIN_L2_ROLE} role can approve the document"
                         )
                     )
+                self.update_claimed_amount_in_employee_advance()
                 self.make_gl_entries()
             elif self.status == ExpenseClaimConstants.PENDING_PURCHASE_INVOICE:
                 if old_doc.status not in [
@@ -427,6 +427,7 @@ class CustomExpenseClaim(ExpenseClaim):
                     old_doc.status == ExpenseClaimConstants.PENDING_PAYMENT
                     and frappe.session.user == "Administrator"
                 ):
+                    self.update_claimed_amount_in_employee_advance()
                     self.ignore_linked_doctypes = (
                         "GL Entry",
                         "Stock Ledger Entry",
@@ -541,7 +542,6 @@ class CustomExpenseClaim(ExpenseClaim):
     def on_cancel(self):
         self.status = ExpenseClaimConstants.CANCELLED
         self.state_transition_check()
-        self.update_claimed_amount_in_employee_advance()
         self.db_set("status", ExpenseClaimConstants.CANCELLED)
 
     # overriding as update_reimbursed_amount function is calling to set status
@@ -555,8 +555,6 @@ class CustomExpenseClaim(ExpenseClaim):
     def on_submit(self):
         if self.is_submit_and_cancel:
             self.cancel()
-        else:
-            self.update_claimed_amount_in_employee_advance()
 
     @frappe.whitelist()
     def cancel_doc(self):
