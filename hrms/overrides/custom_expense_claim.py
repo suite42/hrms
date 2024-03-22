@@ -667,8 +667,7 @@ def create_payment_entry(doc_name, values):
     if payment_values.paid_amount <= 0:
         frappe.throw(_("Paid Amount should be greater than 0"))
 
-    if payment_values.mode_of_payment != "Cash":
-        payment_date = datetime.strptime(payment_values.payment_date, "%Y-%m-%d").date()
+    payment_date = datetime.strptime(payment_values.payment_date, "%Y-%m-%d").date()
 
     party_details = get_party_details(
         doc.company, "Employee", doc.employee, frappe.utils.nowdate()
