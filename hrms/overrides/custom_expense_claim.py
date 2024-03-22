@@ -325,6 +325,7 @@ class CustomExpenseClaim(ExpenseClaim):
                             f"Only user with role {RoleConstants.OFFICE_ADMIN_L1_ROLE} approve the document"
                         )
                     )
+                self.validate_sanctioned_amount()
             elif self.status == ExpenseClaimConstants.PENDING_PAYMENT:
                 if old_doc.status not in [ExpenseClaimConstants.PENDING_APPROVAL_BY_ADMIN_L2]:
                     frappe.throw(_(f"Invalid State Transition to state {self.status}"))
@@ -334,6 +335,8 @@ class CustomExpenseClaim(ExpenseClaim):
                             f"Only user having {RoleConstants.OFFICE_ADMIN_L2_ROLE} role can approve the document"
                         )
                     )
+                self.validate_sanctioned_amount()
+                self.check_claimed_amount_available_in_employee_advance()
                 self.update_claimed_amount_in_employee_advance()
                 self.make_gl_entries()
             elif self.status == ExpenseClaimConstants.PENDING_PURCHASE_INVOICE:
@@ -555,6 +558,16 @@ class CustomExpenseClaim(ExpenseClaim):
     def on_submit(self):
         if self.is_submit_and_cancel:
             self.cancel()
+
+    def check_claimed_amount_available_in_employee_advance(self):
+        for d in self.get("advances"):
+            advance_doc = frappe.get_doc("Employee Advance", d.employee_advance)
+            if d.allocated_amount > (advance_doc.paid_amount - advance_doc.claimed_amount):
+                frappe.throw(
+                    _(
+                        f"Allocated amount for employee advance {d.employee_advance} is greater than the remaining unclaimed amount {advance_doc.paid_amount - advance_doc.claimed_amount}"
+                    )
+                )
 
     @frappe.whitelist()
     def cancel_doc(self):
