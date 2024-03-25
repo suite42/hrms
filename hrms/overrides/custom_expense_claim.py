@@ -368,6 +368,8 @@ class CustomExpenseClaim(ExpenseClaim):
                                 f"Invalid permission, only user with role {RoleConstants.FINANCE_ROLE} is allowed"
                             )
                         )
+                if old_doc.status in [ExpenseClaimConstants.PENDING_APPROVAL_BY_ADMIN_L2]:
+                    self.update_claimed_amount_in_employee_advance()
             elif self.status == ExpenseClaimConstants.CANCELLED:
                 if old_doc.status not in [
                     ExpenseClaimConstants.DRAFT,
@@ -674,6 +676,16 @@ def create_payment_entry(doc_name, values):
     )
 
     employee_doc = frappe.get_doc("Employee", doc.employee)
+    employee_bank_account = frappe.db.get_list(
+        "Bank Account",
+        filters={"party_type": "Employee", "party": employee_doc.name},
+        pluck="name",
+        ignore_permissions=True,
+    )
+
+    if not employee_bank_account:
+        frappe.throw(_("Please Create Employee Bank Account First to create a payment entry"))
+    employee_bank_account = employee_bank_account[0]
 
     if payment_values.mode_of_payment == "Cash":
         bank_cash_doc = frappe.get_doc("Account", payment_values.from_account)
@@ -748,6 +760,7 @@ def create_payment_entry(doc_name, values):
             "party_type": "Employee",
             "party": doc.employee,
             "party_name": doc.employee_name,
+            "party_bank_account": employee_bank_account,
             "paid_from": bank_cash_account,
             "paid_from_account_currency": bank_account_currency,
             "paid_to": paid_to,
