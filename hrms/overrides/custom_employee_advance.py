@@ -394,6 +394,9 @@ def create_payment_entry(doc_name, values):
         ):
             frappe.throw(_("Company bank account selected is not supported"))
         bank_cash_doc = frappe.get_doc("Account", company_bank_account_doc.account)
+        bank = company_bank_account_doc.bank
+        bank_account = company_bank_account_doc.name
+        bank_account_no = company_bank_account_doc.bank_account_no
 
     bank_cash_account = bank_cash_doc.name
     bank_account_currency = bank_cash_doc.account_currency
@@ -448,6 +451,9 @@ def create_payment_entry(doc_name, values):
             ],
             "reference_no": payment_values.reference_no,
             "reference_date": payment_values.payment_date,
+            "bank": bank,
+            "bank_account": bank_account,
+            "bank_account_no": bank_account_no
         }
     )
     payment_entry_doc = payment_entry.insert(ignore_permissions=True)

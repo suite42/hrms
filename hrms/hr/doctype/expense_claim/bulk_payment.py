@@ -154,6 +154,9 @@ def bulk_payment(url):
             company_bank_account_doc = frappe.get_doc(
                 "Bank Account", company_bank_account_exists[0]
             )
+            bank = company_bank_account_doc.bank
+            bank_account = company_bank_account_doc.name
+            bank_account_no = company_bank_account_doc.bank_account_no
 
         bank_cash_account = frappe.get_doc("Account", company_bank_account_doc.account).name
 
@@ -196,6 +199,9 @@ def bulk_payment(url):
                 "references": refrence_list,
                 "reference_no": row["UTR SrNo"],
                 "reference_date": refrence_date,
+                "bank": bank,
+                "bank_account": bank_account,
+                "bank_account_no": bank_account_no
             }
         )
         payment_entry_doc.insert(ignore_permissions=True).name
