@@ -404,6 +404,17 @@ def create_payment_entry(doc_name, values):
         "account_currency"
     )
 
+    employee_bank_account = frappe.db.get_list(
+        "Bank Account",
+        filters={"party_type": "Employee", "party": employee_advance_doc.employee},
+        pluck="name",
+        ignore_permissions=True,
+    )
+
+    if not employee_bank_account:
+        frappe.throw(_("Please Create Employee Bank Account First to create a payment entry"))
+    employee_bank_account = employee_bank_account[0]
+
     payment_entry = frappe.get_doc(
         {
             "doctype": "Payment Entry",
@@ -413,6 +424,7 @@ def create_payment_entry(doc_name, values):
             "party_type": "Employee",
             "party": employee_advance_doc.employee,
             "party_name": employee_advance_doc.employee_name,
+            "party_bank_account": employee_bank_account,
             "paid_from": bank_cash_account,
             "paid_from_account_currency": bank_account_currency,
             "paid_to": payment_values.to_chart_Account,
