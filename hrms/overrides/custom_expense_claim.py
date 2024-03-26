@@ -81,7 +81,7 @@ class CustomExpenseClaim(ExpenseClaim):
 
     def add_approver(self):
         employee_doc = frappe.get_doc("Employee", self.employee)
-        if self.total_claimed_amount > RoleConstants.ADVANCE_AMOUNT:
+        if self.total_claimed_amount >= RoleConstants.ADVANCE_AMOUNT:
             self.approver_1 = employee_doc.expense_approver_2
         else:
             self.approver_1 = employee_doc.expense_approver
