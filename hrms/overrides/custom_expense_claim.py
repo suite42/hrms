@@ -686,6 +686,9 @@ def create_payment_entry(doc_name, values):
         frappe.throw(_("Please Create Employee Bank Account First to create a payment entry"))
     employee_bank_account = employee_bank_account[0]
 
+    bank = None
+    bank_account = None
+    bank_account_no = None
     if payment_values.mode_of_payment == "Cash":
         bank_cash_doc = frappe.get_doc("Account", payment_values.from_account)
     else:

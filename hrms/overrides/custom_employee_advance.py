@@ -407,6 +407,9 @@ def create_payment_entry(doc_name, values):
     if payment_date < current_date:
         frappe.throw(_(f"Payment Date Cannot be before  {current_date.strftime('%Y-%m-%d')}"))
 
+    bank = None
+    bank_account = None
+    bank_account_no = None
     if payment_values.mode_of_payment == "Cash":
         bank_cash_doc = frappe.get_doc("Account", payment_values.from_account)
     else:
