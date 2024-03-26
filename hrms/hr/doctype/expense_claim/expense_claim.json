@@ -56,7 +56,9 @@
   "amended_from",
   "is_submit_and_cancel",
   "expense_category_flow",
-  "employee_supplier"
+  "employee_supplier",
+  "help_tab",
+  "help_html"
  ],
  "fields": [
   {
@@ -446,13 +448,23 @@
    "fieldtype": "Link",
    "label": "Make My Trip Record",
    "options": "Make My Trip"
+  },
+  {
+   "fieldname": "help_tab",
+   "fieldtype": "Tab Break",
+   "label": "Help"
+  },
+  {
+   "fieldname": "help_html",
+   "fieldtype": "HTML",
+   "label": "Help HTML"
   }
  ],
  "icon": "fa fa-money",
  "idx": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-03-19 09:14:52.632963",
+ "modified": "2024-03-26 15:03:48.603829",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Expense Claim",

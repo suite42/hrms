@@ -64,6 +64,9 @@ frappe.ui.form.on('Employee Advance', {
 				};
 			});
 		}
+
+		$(frm.fields_dict["help_html"].wrapper).html(frappe.render_template("employee_advance_help"));
+
 		var submit_button_required = false;
 		var cancel_button_requried = false;
 		

@@ -40,7 +40,9 @@
   "mode_of_payment",
   "is_submit_and_cancel",
   "employee_bank_account_no",
-  "employee_bank_ifsc"
+  "employee_bank_ifsc",
+  "help_tab",
+  "help_html"
  ],
  "fields": [
   {
@@ -276,11 +278,21 @@
    "fieldtype": "Data",
    "label": "Bank IFSC Number",
    "read_only": 1
+  },
+  {
+   "fieldname": "help_tab",
+   "fieldtype": "Tab Break",
+   "label": "Help"
+  },
+  {
+   "fieldname": "help_html",
+   "fieldtype": "HTML",
+   "label": "Help HTML"
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2024-03-26 11:36:18.412544",
+ "modified": "2024-03-26 12:45:26.280797",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Employee Advance",
