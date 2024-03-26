@@ -642,7 +642,7 @@ def get_total_pending_amount(doc_employee_name):
 @frappe.whitelist()
 @handle_exceptions_with_readable_message
 def get_mode_of_payments():
-    return frappe.db.get_list("Mode of Payment", pluck="name", ignore_permissions=True)
+    return frappe.db.get_list("Mode of Payment", filters={"name": ["not in", ["Cheque"]]}, pluck="name", ignore_permissions=True)
 
 
 @frappe.whitelist()
