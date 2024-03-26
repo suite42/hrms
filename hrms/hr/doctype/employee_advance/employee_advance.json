@@ -256,9 +256,12 @@
    "reqd": 1
   },
   {
-   "default": "1",
+   "allow_in_quick_entry": 1,
+   "allow_on_submit": 1,
+   "default": "0",
    "fieldname": "is_date_override",
    "fieldtype": "Check",
+   "in_preview": 1,
    "label": "Date Override",
    "permlevel": 3
   },
@@ -277,7 +280,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2024-03-18 16:40:41.349184",
+ "modified": "2024-03-26 11:36:18.412544",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Employee Advance",
