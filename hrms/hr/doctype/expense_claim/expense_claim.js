@@ -216,6 +216,8 @@ frappe.ui.form.on("Expense Claim", {
 			});
 		}
 
+		$(frm.fields_dict["help_html"].wrapper).html(frappe.render_template("expense_claim_help"));
+
 		var statusArray = ["Pending Payment", "Paid", "Cancelled"]
 		if(frm.doc.docstatus > 0 && statusArray.includes(frm.doc.status)) {
 			frm.add_custom_button(__('Accounting Ledger'), function() {
