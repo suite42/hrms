@@ -59,20 +59,13 @@ class CustomExpenseClaim(ExpenseClaim):
                     or frappe.session.user == "Administrator"
                 ):
                     frappe.throw(_("Only the Added approver can edit the document"))
-                if (
-                    old_doc.total_sanctioned_amount == self.total_sanctioned_amount
-                    and old_doc.total_advance_amount == self.total_advance_amount
-                ):
-                    frappe.throw(
-                        _(
-                            f"Only allowed to edit sanction and advance amount in {self.status} state"
-                        )
-                    )
+                if len(self.advances) < len(old_doc.advances):
+                    frappe.throw(_("Cannot Delete Employee Advances"))
                 self.validate_sanctioned_amount()
-        else:
-            self.payable_account = CompanyConstants.PAYABLE_ACCOUNTS[self.company][
-                "reimbursement_payable_account"
-            ]
+        
+        self.payable_account = CompanyConstants.PAYABLE_ACCOUNTS[self.company][
+            "reimbursement_payable_account"
+        ]
         if self.expense_category_flow == "Flow1" and self.status == ExpenseClaimConstants.DRAFT:
             self.set("advances", [])
             self.add_advances()
@@ -273,8 +266,7 @@ class CustomExpenseClaim(ExpenseClaim):
                         "Stock Ledger Entry",
                         "Payment Ledger Entry",
                     )
-                    if self.payable_account:
-                        self.make_gl_entries(cancel=True)
+                    self.make_gl_entries(cancel=True)
             else:
                 frappe.throw(_("Unhandelled State Transition"))
 
@@ -438,8 +430,7 @@ class CustomExpenseClaim(ExpenseClaim):
                         "Stock Ledger Entry",
                         "Payment Ledger Entry",
                     )
-                    if self.payable_account:
-                        self.make_gl_entries(cancel=True)
+                    self.make_gl_entries(cancel=True)
             else:
                 frappe.throw(_("Unhandelled State Transition"))
 
@@ -558,6 +549,8 @@ class CustomExpenseClaim(ExpenseClaim):
         pass
 
     def on_submit(self):
+        if self.status not in [ExpenseClaimConstants.PENDING_APPROVAL_BY_ADMIN_L1,ExpenseClaimConstants.PENDING_APPROVAL_BY_HR_L1] :
+            frappe.throw(_(f"Cannot Submit in state {self.status}"))
         if self.is_submit_and_cancel:
             self.cancel()
 
@@ -593,7 +586,7 @@ def next_state(doc_name):
             expense_claim_doc.submit()
         elif expense_claim_doc.status == ExpenseClaimConstants.PENDING_APPROVAL_BY_ADMIN_L1:
             expense_claim_doc.status = ExpenseClaimConstants.PENDING_APPROVAL_BY_ADMIN_L2
-            expense_claim_doc.save()
+            expense_claim_doc.save(ignore_permissions=True)
         elif expense_claim_doc.status == ExpenseClaimConstants.PENDING_APPROVAL_BY_ADMIN_L2:
             employee_doc = frappe.get_doc("Employee", expense_claim_doc.employee)
             if employee_doc.employment_type == EmployeeConstant.CONTRACT_EMPLOYEE_TYPE:
@@ -602,7 +595,7 @@ def next_state(doc_name):
                 expense_claim_doc.status = ExpenseClaimConstants.PAID
             else:
                 expense_claim_doc.status = ExpenseClaimConstants.PENDING_PAYMENT
-            expense_claim_doc.save()
+            expense_claim_doc.save(ignore_permissions=True)
         else:
             frappe.throw(_("Unhandelled State Transition"))
     elif expense_claim_doc.expense_category_flow == "Flow2":
@@ -615,10 +608,10 @@ def next_state(doc_name):
             expense_claim_doc.submit()
         elif expense_claim_doc.status == ExpenseClaimConstants.PENDING_APPROVAL_BY_HR_L1:
             expense_claim_doc.status = ExpenseClaimConstants.PENDING_APPROVAL_BY_HR_L2
-            expense_claim_doc.save()
+            expense_claim_doc.save(ignore_permissions=True)
         elif expense_claim_doc.status == ExpenseClaimConstants.PENDING_APPROVAL_BY_HR_L2:
             expense_claim_doc.status = ExpenseClaimConstants.PENDING_PAYMENT
-            expense_claim_doc.save()
+            expense_claim_doc.save(ignore_permissions=True)
         else:
             frappe.throw(_("Unhandelled State Transition"))
     else:
@@ -642,7 +635,12 @@ def get_total_pending_amount(doc_employee_name):
 @frappe.whitelist()
 @handle_exceptions_with_readable_message
 def get_mode_of_payments():
-    return frappe.db.get_list("Mode of Payment", filters={"name": ["not in", ["Cheque"]]}, pluck="name", ignore_permissions=True)
+    return frappe.db.get_list(
+        "Mode of Payment",
+        filters={"name": ["not in", ["Cheque"]]},
+        pluck="name",
+        ignore_permissions=True,
+    )
 
 
 @frappe.whitelist()
@@ -780,7 +778,7 @@ def create_payment_entry(doc_name, values):
             "reference_date": payment_values.payment_date,
             "bank": bank,
             "bank_account": bank_account,
-            "bank_account_no": bank_account_no
+            "bank_account_no": bank_account_no,
         }
     )
     doc = payment_entry_doc.insert(ignore_permissions=True)

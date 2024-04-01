@@ -8,7 +8,10 @@ frappe.ui.form.on('Expense Claim', {
 	onload: function(frm) {
 		erpnext.accounts.dimensions.setup_dimension_filters(frm, frm.doctype);
 	
-
+		if(frm.is_new()){
+			frm.is_submit_and_cancel = 0
+		}
+		
 		if(frm.doc.status === "Draft" && frm.doc.docstatus === 0 && (frm.doc.employee?.length || 0) === 0){
 			frappe.db.get_value("Employee", {"user_id": frappe.session.user}, ["name", "employee_name", "company"], function(response) {
 			if (Object.keys(response).length !== 0) {
@@ -215,6 +218,14 @@ frappe.ui.form.on("Expense Claim", {
 				};
 			});
 		}
+
+		if(frm.doc.status=="Pending Approval"){
+			if(frm.doc.expense_category != "Business Expenses Outstation"){
+				frm.toggle_display('mmt_id', false);
+			}
+		}
+
+		$(frm.fields_dict["help_html"].wrapper).html(frappe.render_template("expense_claim_help"));
 
 		var statusArray = ["Pending Payment", "Paid", "Cancelled"]
 		if(frm.doc.docstatus > 0 && statusArray.includes(frm.doc.status)) {

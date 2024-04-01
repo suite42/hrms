@@ -47,10 +47,10 @@ class CustomEmployeeAdvance(EmployeeAdvance):
                 ):
                     frappe.throw(_("Only the Added approver can edit the document"))
                 self.check_sanctioned_amount()
-        else:
-            self.advance_account = CompanyConstants.PAYABLE_ACCOUNTS[self.company][
-                "advance_payable_account"
-            ]
+        
+        self.advance_account = CompanyConstants.PAYABLE_ACCOUNTS[self.company][
+            "advance_payable_account"
+        ]
         self.add_approver()
         self.validate_approver()
 
@@ -75,26 +75,12 @@ class CustomEmployeeAdvance(EmployeeAdvance):
             no_of_days * EmployeeAdvanceConstants.ALLOWED_AMOUNT_PER_DAY
         )
         old_doc = self.get_doc_before_save()
-        if old_doc.status == EmployeeAdvanceConstants.DRAFT:
-            if self.advance_amount > amount_allowed_for_the_current_trip:
-                frappe.msgprint(
-                    _(
-                        f"Requested amount {self.advance_amount} should be less than total amount {amount_allowed_for_the_current_trip} allowed for {no_of_days} Days"
-                    )
-                )
-        elif old_doc.status == EmployeeAdvanceConstants.PENDING_APPROVAL:
-            if self.sanctioned_amount > amount_allowed_for_the_current_trip:
-                frappe.msgprint(
-                    _(
-                        f"Requested amount {self.advance_amount} should be less than total amount {amount_allowed_for_the_current_trip} allowed for {no_of_days} Days"
-                    )
-                )
-        elif old_doc.status == EmployeeAdvanceConstants.PENDING_APPROVAL_BY_ADMIN_L2:
+        if old_doc.status == EmployeeAdvanceConstants.PENDING_APPROVAL_BY_ADMIN_L2:
             if self.sanctioned_amount > amount_allowed_for_the_current_trip:
                 if not self.is_date_override:
                     frappe.throw(
                         _(
-                            f"Requested amount {self.sanctioned_amount} should be less than total amount {amount_allowed_for_the_current_trip} allowed for {no_of_days} Days, select the Date override checkbox before approving"
+                            f"Sanctioned amount {self.sanctioned_amount} should be less than total amount {amount_allowed_for_the_current_trip} allowed for {no_of_days} Days, select the Date override checkbox before approving"
                         )
                     )
 
@@ -103,13 +89,15 @@ class CustomEmployeeAdvance(EmployeeAdvance):
             if not self.mmt_id:
                 frappe.throw(
                     _(
-                        f"MMT Record should be attached for Expense category {self.expense_category}"
+                        f'Travel Request ID should be attached for Expense category "{self.expense_category}"'
                     )
                 )
         else:
             if self.mmt_id:
                 frappe.throw(
-                    _(f"MMT Should not be attached for Expense Category {self.expense_category}")
+                    _(
+                        f'Travel Request ID should not be attached for Expense category "{self.expense_category}"'
+                    )
                 )
 
     def validate_employee_type(self):
@@ -322,6 +310,8 @@ class CustomEmployeeAdvance(EmployeeAdvance):
         pass
 
     def on_submit(self):
+        if self.status != EmployeeAdvanceConstants.PENDING_APPROVAL_BY_ADMIN_L2:
+            frappe.throw(_(f"Cannot Submit in state {self.status}"))
         if self.is_submit_and_cancel:
             self.cancel()
 
@@ -380,10 +370,25 @@ def next_state(doc_name):
         employee_advance_doc.submit()
     elif employee_advance_doc.status == EmployeeAdvanceConstants.PENDING_APPROVAL_BY_ADMIN_L2:
         employee_advance_doc.status = EmployeeAdvanceConstants.PENDING_PAYMENT
-        employee_advance_doc.save()
+        employee_advance_doc.save(ignore_permissions=True)
     else:
         frappe.throw(_("Unhandelled State Transition"))
     return f"Successfully transitioned to the State {employee_advance_doc.status}"
+
+
+@frappe.whitelist()
+@handle_exceptions_with_readable_message
+def check_sanctioned_amount_is_above_limit(frm_date, to_date, sanctioned_amount):
+    from_date = datetime.strptime(str(frm_date), "%Y-%m-%d")
+    to__date = datetime.strptime(str(to_date), "%Y-%m-%d")
+    no_of_days = to__date.day - from_date.day + 1
+    amount_allowed_for_the_current_trip = (
+        no_of_days * EmployeeAdvanceConstants.ALLOWED_AMOUNT_PER_DAY
+    )
+    if int(sanctioned_amount) > amount_allowed_for_the_current_trip:
+        return True
+    else:
+        return False
 
 
 @frappe.whitelist()

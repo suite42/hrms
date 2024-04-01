@@ -2,6 +2,10 @@
 // For license information, please see license.txt
 frappe.ui.form.on('Employee Advance', {
 	onload: function(frm) {
+		if(frm.is_new()){
+			frm.is_submit_and_cancel = 0
+		}
+
 		if(frm.doc.status === "Draft" && frm.doc.docstatus === 0){
 			frappe.db.get_value("Employee", {"user_id": frappe.session.user}, ["name", "employee_name", "company"], function(response) {
 				if (Object.keys(response).length !== 0) {
@@ -65,6 +69,38 @@ frappe.ui.form.on('Employee Advance', {
 			});
 		}
 
+		if(frm.doc.status=="Pending Approval"){
+			if(frm.doc.expense_category != "Business Expenses Outstation"){
+				frm.toggle_display('mmt_id', false);
+			}
+		}
+
+		$(frm.fields_dict["help_html"].wrapper).html(frappe.render_template("employee_advance_help"));
+
+
+		if(frm.doc.status == "Pending Approval By Admin L2"){
+			frappe.call({
+				method: "hrms.overrides.custom_employee_advance.check_sanctioned_amount_is_above_limit",
+				args: {
+					frm_date: frm.doc.from_date,
+					to_date: frm.doc.to_date,
+					sanctioned_amount: frm.doc.sanctioned_amount
+				},
+				callback: function(r) {
+					if (r.message) {						
+						$(frm.fields_dict["per_day_amount_html"].wrapper).html(frappe.render_template(`
+						<div>
+							<p><span style="color: red;">*</span>Per day amount allowed according to the HR Policy is 1000</p>
+						</div>
+						`));
+
+					}else{
+						frm.toggle_display('is_date_override', false);
+					}
+				}
+			});
+
+		}
 
 		var submit_button_required = false;
 		var cancel_button_requried = false;

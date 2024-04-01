@@ -9,6 +9,13 @@ class RoleConstants:
     EXPENSE_AMOUNT = 5000
     ADVANCE_AMOUNT = 5000
     EXPENSE_APPROVE_DATE = 5
+    REMOVE_USER_PERMISSIONS_FOR_ROLES = [
+        "HR L1 Expense Approver",
+        "HR L2 Expense Approver",
+        "Finance Team Expense Approver",
+        "Office Admin L1 Expense Approver",
+        "Office Admin L2 Expense Approver",
+    ]
 
 
 class CompanyConstants:
@@ -43,10 +50,6 @@ class EmployeeConstant:
 
 
 class ExpenseCategoryConstants:
-    BUSSINESS_EXP_LOCAL = "Business Expenses Local"
-    BUSSINESS_EXP_OUTSTATION = "Business Expenses Outstation"
-    OFFICE_AND_ADMIN_EXP = "Office maintenance and Admin Expenses"
-    EMPLOYEE_ENG_EXP = "Employee Engagement Expense"
     EXPENSE_CATEGORY_LIST = ["Business Expenses Outstation"]
 
 
