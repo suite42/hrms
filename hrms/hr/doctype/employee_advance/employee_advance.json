@@ -210,8 +210,7 @@
    "fieldname": "currency",
    "fieldtype": "Link",
    "label": "Currency",
-   "options": "Currency",
-   "read_only": 1
+   "options": "Currency"
   },
   {
    "fieldname": "exchange_rate",
@@ -313,16 +312,17 @@
    "label": "Note"
   },
   {
+   "depends_on": "eval:cur_frm.doc.currency != \"INR\";",
    "fieldname": "advance_amt_inr",
    "fieldtype": "Currency",
    "label": "Advance Amount In Company Currency",
-   "options": "currency:INR",
-   "read_only": 1
+   "options": "Company:company:default_currency",
+   "read_only_depends_on": "eval:cur_frm.doc.currency != \"INR\";"
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2024-04-03 13:50:25.051890",
+ "modified": "2024-04-03 17:56:29.965756",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Employee Advance",

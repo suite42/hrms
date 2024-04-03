@@ -127,7 +127,7 @@ frappe.ui.form.on('Employee Advance', {
 			});
 		});
 
-		if(frm.doc.status === "Pending Payment" && frm.doc.currency == "INR"){
+		if(frm.doc.status === "Pending Payment"){
 			frm.events.get_mode_of_payments(frm)
 			frm.events.get_company_bank_accounts(frm)
 			var modeOfPayment = null
