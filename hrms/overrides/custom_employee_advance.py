@@ -47,12 +47,12 @@ class CustomEmployeeAdvance(EmployeeAdvance):
                 ):
                     frappe.throw(_("Only the Added approver can edit the document"))
                 self.check_sanctioned_amount()
-        
         self.advance_account = CompanyConstants.PAYABLE_ACCOUNTS[self.company][
             "advance_payable_account"
         ]
         self.add_approver()
         self.validate_approver()
+        self.calulate_inr_amount()
 
     def add_approver(self):
         employee_doc = frappe.get_doc("Employee", self.employee)
@@ -83,6 +83,10 @@ class CustomEmployeeAdvance(EmployeeAdvance):
                             f"Sanctioned amount {self.sanctioned_amount} should be less than total amount {amount_allowed_for_the_current_trip} allowed for {no_of_days} Days, select the Date override checkbox before approving"
                         )
                     )
+
+    def check_approver_is_owner(self):
+        if self.owner == frappe.session.user and frappe.session.user != "Administrator":
+            frappe.throw(_("Cannot Approve/Cancel Your Own Employee Advance"))
 
     def validate_mmit_id(self):
         if self.expense_category in ExpenseCategoryConstants.EXPENSE_CATEGORY_LIST:
@@ -166,6 +170,7 @@ class CustomEmployeeAdvance(EmployeeAdvance):
                             f"Only user having {RoleConstants.OFFICE_ADMIN_L2_ROLE} Role can approve the document"
                         )
                     )
+                self.check_approver_is_owner()
                 self.check_advance_amount()
             elif self.status == EmployeeAdvanceConstants.PAID:
                 if old_doc.status not in [
@@ -214,6 +219,8 @@ class CustomEmployeeAdvance(EmployeeAdvance):
                     and frappe.session.user != self.approver_1
                 ):
                     frappe.throw(_(f"Can be Canceled either by {self.approver_1} or by Admin"))
+                elif old_doc.status == EmployeeAdvanceConstants.PENDING_APPROVAL_BY_ADMIN_L2:
+                    self.check_approver_is_owner()
                 elif (
                     old_doc.status == EmployeeAdvanceConstants.PENDING_APPROVAL_BY_ADMIN_L2
                     and not user_has_role(frappe.session.user, RoleConstants.OFFICE_ADMIN_L2_ROLE)
@@ -267,6 +274,10 @@ class CustomEmployeeAdvance(EmployeeAdvance):
             or user_has_role(self.approver_1, RoleConstants.EXPENSE_APPROVER2_ROLE)
         ):
             frappe.throw(_(f"Approval selected does not have L1 or L2 Expense Approver Role"))
+
+    def calulate_inr_amount(self):
+        if self.currency != "INR":
+            self.advance_amt_inr = flt(self.exchange_rate*self.advance_amount, 1)
 
     def update_claimed_amount(self):
         claimed_amount = (

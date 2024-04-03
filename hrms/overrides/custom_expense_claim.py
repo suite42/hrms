@@ -62,7 +62,6 @@ class CustomExpenseClaim(ExpenseClaim):
                 if len(self.advances) < len(old_doc.advances):
                     frappe.throw(_("Cannot Delete Employee Advances"))
                 self.validate_sanctioned_amount()
-        
         self.payable_account = CompanyConstants.PAYABLE_ACCOUNTS[self.company][
             "reimbursement_payable_account"
         ]
@@ -72,6 +71,7 @@ class CustomExpenseClaim(ExpenseClaim):
         self.add_approver()
         self.validate_approver()
         self.validate_mmit_id()
+        self.calulate_inr_amount()
 
     def add_approver(self):
         employee_doc = frappe.get_doc("Employee", self.employee)
@@ -93,6 +93,11 @@ class CustomExpenseClaim(ExpenseClaim):
                 frappe.throw(
                     _(f"MMT Should not be attached for Expense Category {self.expense_category}")
                 )
+
+    def calulate_inr_amount(self):
+        if self.currency != "INR":
+            if not self.amount_in_usr_currency:
+                frappe.throw(_("Please fill the \"Amount\" field before saving"))
 
     def validate_employee_type(self):
         employee_doc = frappe.get_doc("Employee", self.employee)
@@ -150,6 +155,10 @@ class CustomExpenseClaim(ExpenseClaim):
         self.round_floats_in(self, ["grand_total"])
         self.db_set("grand_total", self.grand_total)
 
+    def check_approver_is_owner(self):
+        if self.owner == frappe.session.user:
+            frappe.throw(_("Cannot Approve/Cancel Your Own Expense Claim"))
+
     def state_transtition_check_for_flow2(self):
         old_doc = self.get_doc_before_save()
         if old_doc is not None and old_doc.status != self.status:
@@ -197,6 +206,7 @@ class CustomExpenseClaim(ExpenseClaim):
                             f"Only user with role {RoleConstants.HR_L1_EXPENSE_ROLE} approve the document"
                         )
                     )
+                self.check_approver_is_owner()
             elif self.status == ExpenseClaimConstants.PENDING_PAYMENT:
                 if old_doc.status not in [ExpenseClaimConstants.PENDING_APPROVAL_BY_HR_L2]:
                     frappe.throw(_(f"Invalid State Transition to state {self.status}"))
@@ -204,6 +214,7 @@ class CustomExpenseClaim(ExpenseClaim):
                     frappe.throw(
                         _("Only user having HR L2 Expense Approver role can approve the document")
                     )
+                self.check_approver_is_owner()
                 self.make_gl_entries()
             elif self.status == ExpenseClaimConstants.PAID:
                 if old_doc.status not in [ExpenseClaimConstants.PENDING_PAYMENT]:
@@ -234,6 +245,8 @@ class CustomExpenseClaim(ExpenseClaim):
                     and frappe.session.user != self.approver_1
                 ):
                     frappe.throw(_(f"Can be Canceled either by {self.approver_1} or by Admin"))
+                elif old_doc.status == ExpenseClaimConstants.PENDING_APPROVAL_BY_HR_L1:
+                    self.check_approver_is_owner()
                 elif (
                     old_doc.status == ExpenseClaimConstants.PENDING_APPROVAL_BY_HR_L1
                     and not user_has_role(frappe.session.user, RoleConstants.HR_L1_EXPENSE_ROLE)
@@ -243,6 +256,8 @@ class CustomExpenseClaim(ExpenseClaim):
                             f"Only user having {RoleConstants.HR_L1_EXPENSE_ROLE} can cancel the document"
                         )
                     )
+                elif old_doc.status == ExpenseClaimConstants.PENDING_APPROVAL_BY_HR_L2:
+                    self.check_approver_is_owner()
                 elif (
                     old_doc.status == ExpenseClaimConstants.PENDING_APPROVAL_BY_HR_L2
                     and not user_has_role(frappe.session.user, RoleConstants.HR_L2_EXPENSE_ROLE)
@@ -317,6 +332,7 @@ class CustomExpenseClaim(ExpenseClaim):
                             f"Only user with role {RoleConstants.OFFICE_ADMIN_L1_ROLE} approve the document"
                         )
                     )
+                self.check_approver_is_owner()
                 self.validate_sanctioned_amount()
             elif self.status == ExpenseClaimConstants.PENDING_PAYMENT:
                 if old_doc.status not in [ExpenseClaimConstants.PENDING_APPROVAL_BY_ADMIN_L2]:
@@ -327,6 +343,7 @@ class CustomExpenseClaim(ExpenseClaim):
                             f"Only user having {RoleConstants.OFFICE_ADMIN_L2_ROLE} role can approve the document"
                         )
                     )
+                self.check_approver_is_owner()
                 self.validate_sanctioned_amount()
                 self.check_claimed_amount_available_in_employee_advance()
                 self.update_claimed_amount_in_employee_advance()
@@ -384,6 +401,8 @@ class CustomExpenseClaim(ExpenseClaim):
                     and frappe.session.user != self.approver_1
                 ):
                     frappe.throw(_(f"Can be Canceled either by {self.approver_1} or by Admin"))
+                elif old_doc.status == ExpenseClaimConstants.PENDING_APPROVAL_BY_ADMIN_L1:
+                    self.check_approver_is_owner()
                 elif (
                     old_doc.status == ExpenseClaimConstants.PENDING_APPROVAL_BY_ADMIN_L1
                     and not user_has_role(frappe.session.user, RoleConstants.OFFICE_ADMIN_L1_ROLE)
@@ -393,6 +412,8 @@ class CustomExpenseClaim(ExpenseClaim):
                             f"Only user having {ExpenseClaimConstants.PENDING_APPROVAL_BY_ADMIN_L1} can cancel the document"
                         )
                     )
+                elif old_doc.status == ExpenseClaimConstants.PENDING_APPROVAL_BY_ADMIN_L2:
+                    self.check_approver_is_owner()
                 elif (
                     old_doc.status == ExpenseClaimConstants.PENDING_APPROVAL_BY_ADMIN_L2
                     and not user_has_role(frappe.session.user, RoleConstants.OFFICE_ADMIN_L2_ROLE)
@@ -549,7 +570,10 @@ class CustomExpenseClaim(ExpenseClaim):
         pass
 
     def on_submit(self):
-        if self.status not in [ExpenseClaimConstants.PENDING_APPROVAL_BY_ADMIN_L1,ExpenseClaimConstants.PENDING_APPROVAL_BY_HR_L1] :
+        if self.status not in [
+            ExpenseClaimConstants.PENDING_APPROVAL_BY_ADMIN_L1,
+            ExpenseClaimConstants.PENDING_APPROVAL_BY_HR_L1,
+        ]:
             frappe.throw(_(f"Cannot Submit in state {self.status}"))
         if self.is_submit_and_cancel:
             self.cancel()

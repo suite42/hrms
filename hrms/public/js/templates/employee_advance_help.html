@@ -1,34 +1,22 @@
 <div>
-    <h3>Fields and Approval Flow Information</h3> 
-    
-    <p>Employee while creating can employee advance will have to select Expense Category.</p>
+    <h3>Create an Advance Request</h3> 
 
-    The Expense Category Availabe are:
-    <ul>
-        <li> Business Expense Local </li>
-        <li> Business Expense Outstation </li>
-        <li> Employee Engagement Expense (Eg: Fuel your Mind) </li>
-        <li> Office Mantainence and Admin Expense </li>
-    </ul>
-    There are some rules based on the Expense Category Employee selects
-    <p>If Expense Category is <b>Business Expense Outstation</b> then employee has to select a Travel Request record if the record is not present then get it created first from the Office Admin Team</p>
-    <p>For rest of the Expense Category there Travel Request record record should not be attached or else an error will be thrown </p>
-    once an employee save then depending upon the advance amount he has filled then the approver will be pre filled.
-    <p>Employee can select in which currency it can request employee advance, By default currency is <b>INR</b></p>
-
-    <h2><b>Some Important Points to keep in Mind</b></h2>
-    <p>On an Employee Level, Once he clicks on approve the employee advance will be shared to the approver and you will get a popup stating document shared succesfully. And the Status field will be updated from Draft to Pending approval.</p> 
-    <p>If someone wants to verify wheather the document is which state then you can check the status field at the bottom</p>
+    <p>In this Document, employee’s can create a cash advance request for work related expenses.  The process for requesting cash advances is similar to employee expense claims. These advances will be later settled against expenses by submitting expense claims. </p>
+    <p><span style="color: red;">**</span>Advances not settled against expenses by employee will be deducted from salary after a certain time period</p>
+    <p> If you have received any cash advances for a specific purpose (Travel, stay etc) , you can settle the cash advances against the expense as well.</p>
+        The Expense Category Available currently are:
         <ul>
-            <li>Draft - At Employee Level</li>
-            <li>Pending Approval - At Manager Level</li>
-            <li>Pending Approval By Admin L2 - At Office Admin Level</li>
-            <li>Pendint Payment - At the Finance payment state</li>
+            <li> <b>Business Expense Local -:</b>  General expenses by employees for day to day business like food, fuel, phone bills (within the office city )</li>
+            <li> <b>Business Expense Outstation -:</b> Expenses related to Travels outside of bangalore. These are expenses against planned travels, either national or international.  </li>
+            <li> <b>Employee Engagement Expense -:</b>  Claims against HR policies , like “Celebrating You”/“Fuel your Mind and Body” </li>
+            <li> <b>Office Maintenance and Admin Expense -:</b>  Expenses related to office maintenance and admin. This is not relevant for most employees except those taking part in office maintenance and related activities.</li>
         </ul>
-
-
-    <p><b>1. Employee creates an advance request with the amount he needs and Depending upon the amount either Manager L1 or L2 will be prefilled.</b></p>
-    <p><b>2. Manager either approves or cancels the request. He can also change the sanctioned amount and make it less than or equal to the claimed amount.</b></p>
-    <p><b>3. Once The Manager Approvers it will go to the Admin L2 stage. where it can approve or cancel the request.</b></p>
-    <p><b>4. All the Admin l2 approved requests will be paid by the finance team either by CASH or CMS. (Finance team cannot cancel before or after payment), Partial Payments are not supported.</b></p>
+        <br>
+        <p><span style="color: red;">**</span>If Expense Category is <b>“Business Expense Outstation”</b> then employee has to mandatorily select a “Travel Request Id” in the form. If you do not know the “Travel Request Id”  or it is not created, you can get it created by the Office Admin Team. (Pavitra/ Didarul). 
+        <br>
+        <p>Approvers are auto filled based on organisation hierarchy.</p>
+        <br>
+        <p>Once you review it, you need to click on the “Send for Approval”  button at the top to submit the expense claim </p>
+        <h2><b>Some Important Points to keep in Mind</b></h2>
+        <p>On an Employee Level, Once he/she clicks on <b>“Send for Approval”</b> the expense claim will be shared to the approver and you will get a popup stating document shared successfully.  And the Status field will be updated from <b>Draft</b> to <b>“Pending approval”</b>. It is your responsibility to get the expense claim approved by your manager/skip manager as selected by the system. </p>
 </div>
