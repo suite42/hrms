@@ -15,12 +15,11 @@
   "column_break_4",
   "employee_name",
   "status",
-  "currency",
-  "exchange_rate",
   "repay_unclaimed_amount_from_salary",
   "section_break_8",
   "from_date",
-  "advance_amount",
+  "currency",
+  "exchange_rate",
   "is_date_override",
   "per_day_amount_html",
   "sanctioned_amount",
@@ -30,11 +29,13 @@
   "column_break_11",
   "to_date",
   "approver_1",
+  "advance_amount",
+  "advance_amt_in_company_currency",
   "purpose",
   "pending_amount",
   "section_break_7",
   "company",
-  "amended_from",
+  "company_currency",
   "column_break_18",
   "advance_account",
   "mode_of_payment",
@@ -120,7 +121,7 @@
    "fieldtype": "Currency",
    "label": "Paid Amount",
    "no_copy": 1,
-   "options": "currency",
+   "options": "Company:company:default_currency",
    "read_only": 1
   },
   {
@@ -129,7 +130,7 @@
    "fieldtype": "Currency",
    "label": "Claimed Amount",
    "no_copy": 1,
-   "options": "currency",
+   "options": "Company:company:default_currency",
    "read_only": 1
   },
   {
@@ -153,15 +154,6 @@
    "permlevel": 1,
    "read_only_depends_on": "eval:!cur_frm.is_new();",
    "reqd": 1
-  },
-  {
-   "fieldname": "amended_from",
-   "fieldtype": "Link",
-   "label": "Amended From",
-   "no_copy": 1,
-   "options": "Employee Advance",
-   "print_hide": 1,
-   "read_only": 1
   },
   {
    "fieldname": "column_break_18",
@@ -188,7 +180,7 @@
    "fieldtype": "Currency",
    "hidden": 1,
    "label": "Returned Amount",
-   "options": "currency",
+   "options": "Company:company:default_currency",
    "read_only": 1
   },
   {
@@ -202,30 +194,28 @@
    "fieldname": "pending_amount",
    "fieldtype": "Currency",
    "label": "Pending Amount",
-   "options": "currency",
+   "options": "Company:company:default_currency",
    "read_only": 1
   },
   {
    "fieldname": "currency",
    "fieldtype": "Link",
    "label": "Currency",
-   "options": "Currency",
-   "read_only": 1
+   "options": "Currency"
   },
   {
-   "depends_on": "currency",
    "fieldname": "exchange_rate",
    "fieldtype": "Float",
-   "hidden": 1,
    "label": "Exchange Rate",
-   "precision": "9"
+   "precision": "1",
+   "read_only": 1
   },
   {
    "allow_on_submit": 1,
    "fieldname": "sanctioned_amount",
    "fieldtype": "Currency",
    "label": "Sanctioned Amount",
-   "options": "currency",
+   "options": "Company:company:default_currency",
    "permlevel": 1
   },
   {
@@ -312,11 +302,26 @@
    "fieldname": "per_day_amount_html",
    "fieldtype": "HTML",
    "label": "Note"
+  },
+  {
+   "fetch_from": "company.default_currency",
+   "fieldname": "company_currency",
+   "fieldtype": "Link",
+   "label": "Company Currency",
+   "options": "Currency",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:cur_frm.doc.currency != cur_frm.doc.company_currency;",
+   "fieldname": "advance_amt_in_company_currency",
+   "fieldtype": "Currency",
+   "label": "Advance Amount In Company Currency",
+   "options": "Company:company:default_currency"
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2024-04-01 18:55:47.168438",
+ "modified": "2024-04-04 11:33:15.476407",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Employee Advance",
