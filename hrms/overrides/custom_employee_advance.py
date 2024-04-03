@@ -276,7 +276,8 @@ class CustomEmployeeAdvance(EmployeeAdvance):
             frappe.throw(_(f"Approval selected does not have L1 or L2 Expense Approver Role"))
 
     def calulate_inr_amount(self):
-        if self.currency != "INR":
+        get_default_company_currency = frappe.db.get_value("Company", CompanyConstants.SUITE42, "default_currency")
+        if self.currency != get_default_company_currency:
             self.advance_amt_inr = flt(self.exchange_rate*self.advance_amount, 1)
 
     def update_claimed_amount(self):
