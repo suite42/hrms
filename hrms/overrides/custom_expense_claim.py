@@ -95,9 +95,12 @@ class CustomExpenseClaim(ExpenseClaim):
                 )
 
     def calulate_inr_amount(self):
-        if self.currency != "INR":
-            if not self.amount_in_usr_currency:
-                frappe.throw(_("Please fill the \"Amount\" field before saving"))
+        get_default_company_currency = frappe.db.get_value("Company", CompanyConstants.SUITE42, "default_currency")
+        if self.currency != get_default_company_currency:
+            expenses_list = self.get("expenses")
+            for row in expenses_list:
+                if not row.amount_in_usr_currency:
+                    frappe.throw(_("Please Fill the \"Amount\" Field before saving"))
 
     def validate_employee_type(self):
         employee_doc = frappe.get_doc("Employee", self.employee)
