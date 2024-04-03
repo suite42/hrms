@@ -71,6 +71,7 @@ class CustomExpenseClaim(ExpenseClaim):
         self.add_approver()
         self.validate_approver()
         self.validate_mmit_id()
+        self.validate_expenses()
 
     def add_approver(self):
         employee_doc = frappe.get_doc("Employee", self.employee)
@@ -92,6 +93,14 @@ class CustomExpenseClaim(ExpenseClaim):
                 frappe.throw(
                     _(f"MMT Should not be attached for Expense Category {self.expense_category}")
                 )
+
+    def validate_expenses(self):
+        expenses_list = self.get("expenses")
+        for row in expenses_list:
+            if self.currency != self.default_currency and not row.amount_in_user_currency:
+                frappe.throw(_('Please Fill the "Amount" Field before saving'))
+            elif self.currency == self.default_currency:
+                row.amount_in_user_currency = row.amount
 
     def validate_employee_type(self):
         employee_doc = frappe.get_doc("Employee", self.employee)
