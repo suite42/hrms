@@ -71,6 +71,7 @@ class CustomExpenseClaim(ExpenseClaim):
         self.add_approver()
         self.validate_approver()
         self.validate_mmit_id()
+        self.calulate_inr_amount()
 
     def add_approver(self):
         employee_doc = frappe.get_doc("Employee", self.employee)
@@ -92,6 +93,11 @@ class CustomExpenseClaim(ExpenseClaim):
                 frappe.throw(
                     _(f"MMT Should not be attached for Expense Category {self.expense_category}")
                 )
+
+    def calulate_inr_amount(self):
+        if self.currency != "INR":
+            if not self.amount_in_usr_currency:
+                frappe.throw(_("Please fill the \"Amount\" field before saving"))
 
     def validate_employee_type(self):
         employee_doc = frappe.get_doc("Employee", self.employee)

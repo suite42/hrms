@@ -53,6 +53,7 @@ class CustomEmployeeAdvance(EmployeeAdvance):
         ]
         self.add_approver()
         self.validate_approver()
+        self.calulate_inr_amount()
 
     def add_approver(self):
         employee_doc = frappe.get_doc("Employee", self.employee)
@@ -85,7 +86,7 @@ class CustomEmployeeAdvance(EmployeeAdvance):
                     )
 
     def check_approver_is_owner(self):
-        if self.owner == frappe.session.user:
+        if self.owner == frappe.session.user and frappe.session.user != "Administrator":
             frappe.throw(_("Cannot Approve/Cancel Your Own Employee Advance"))
 
     def validate_mmit_id(self):
@@ -274,6 +275,10 @@ class CustomEmployeeAdvance(EmployeeAdvance):
             or user_has_role(self.approver_1, RoleConstants.EXPENSE_APPROVER2_ROLE)
         ):
             frappe.throw(_(f"Approval selected does not have L1 or L2 Expense Approver Role"))
+
+    def calulate_inr_amount(self):
+        if self.currency != "INR":
+            self.advance_amt_inr = flt(self.exchange_rate*self.advance_amount, 1)
 
     def update_claimed_amount(self):
         claimed_amount = (

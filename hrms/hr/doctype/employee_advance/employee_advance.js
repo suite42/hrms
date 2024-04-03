@@ -77,6 +77,10 @@ frappe.ui.form.on('Employee Advance', {
 
 		$(frm.fields_dict["help_html"].wrapper).html(frappe.render_template("employee_advance_help"));
 
+		if(frm.doc.currency == "INR"){
+			frm.toggle_display('exchange_rate', false)
+			frm.toggle_display('advance_amt_inr', false)
+		}
 
 		if(frm.doc.status == "Pending Approval By Admin L2"){
 			frappe.call({
@@ -123,7 +127,7 @@ frappe.ui.form.on('Employee Advance', {
 			});
 		});
 
-		if(frm.doc.status === "Pending Payment" && frm.doc.currency == "INR"){
+		if(frm.doc.status === "Pending Payment"){
 			frm.events.get_mode_of_payments(frm)
 			frm.events.get_company_bank_accounts(frm)
 			var modeOfPayment = null
