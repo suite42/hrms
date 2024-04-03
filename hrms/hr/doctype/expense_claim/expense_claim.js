@@ -208,6 +208,14 @@ frappe.ui.form.on("Expense Claim", {
 		});
 	},
 
+	currency: function(frm) {
+		if(frm.doc.currency == "INR"){
+			frappe.require('assets/hrms/js/child_table_utils.js', () => {
+				makeColumnsReadOnly(frm, ["amount_in_usr_currency"], "expenses");
+			});
+		}
+	},
+
 	refresh: function(frm) {
 		frm.trigger("toggle_fields");
 
@@ -352,6 +360,11 @@ frappe.ui.form.on("Expense Claim", {
 			}).addClass("btn btn-primary btn-sm");
 		}
 
+		if(frm.doc.currency == "INR"){
+			frappe.require('assets/hrms/js/child_table_utils.js', () => {
+				removeColumns(frm, ["amount_in_usr_currency"], "expenses");
+			});
+		}
 	},
 
 	get_mode_of_payments: function(frm){
