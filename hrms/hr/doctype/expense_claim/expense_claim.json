@@ -14,6 +14,7 @@
   "column_break_5",
   "employee_name",
   "status",
+  "currency",
   "is_overriden",
   "expense_approver",
   "approval_status",
@@ -53,7 +54,6 @@
   "cost_center",
   "more_details",
   "posting_date",
-  "amended_from",
   "is_submit_and_cancel",
   "expense_category_flow",
   "employee_supplier",
@@ -320,20 +320,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "amended_from",
-   "fieldtype": "Link",
-   "ignore_user_permissions": 1,
-   "label": "Amended From",
-   "no_copy": 1,
-   "oldfieldname": "amended_from",
-   "oldfieldtype": "Data",
-   "options": "Expense Claim",
-   "print_hide": 1,
-   "read_only": 1,
-   "report_hide": 1,
-   "width": "160px"
-  },
-  {
    "bold": 1,
    "fieldname": "advance_payments",
    "fieldtype": "Section Break",
@@ -466,13 +452,19 @@
    "fieldname": "help_html",
    "fieldtype": "HTML",
    "label": "Help HTML"
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
   }
  ],
  "icon": "fa fa-money",
  "idx": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-04-01 19:08:19.388410",
+ "modified": "2024-04-03 14:09:48.742695",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Expense Claim",
