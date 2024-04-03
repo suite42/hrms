@@ -211,7 +211,7 @@ frappe.ui.form.on("Expense Claim", {
 	currency: function(frm) {
 		if(frm.doc.currency == "INR"){
 			frappe.require('assets/hrms/js/child_table_utils.js', () => {
-				makeColumnsReadOnly(frm, ["amount_in_usr_currency"], "expenses");
+				makeColumnsReadOnly(frm, ["amount_in_user_currency"], "expenses");
 			});
 		}
 	},
@@ -362,7 +362,7 @@ frappe.ui.form.on("Expense Claim", {
 
 		if(frm.doc.currency == "INR"){
 			frappe.require('assets/hrms/js/child_table_utils.js', () => {
-				removeColumns(frm, ["amount_in_usr_currency"], "expenses");
+				removeColumns(frm, ["amount_in_user_currency"], "expenses");
 			});
 		}
 	},
