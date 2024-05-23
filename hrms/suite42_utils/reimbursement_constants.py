@@ -68,6 +68,8 @@ class ExpenseClaimConstants:
 
 
 class EmployeeAdvanceConstants:
+    ALLOWED_AMOUNT_PER_DAY = 1000
+
     DRAFT = "Draft"
     PENDING_APPROVAL = "Pending Approval"
     PENDING_APPROVAL_BY_ADMIN_L2 = "Pending Approval By Admin L2"
@@ -77,4 +79,5 @@ class EmployeeAdvanceConstants:
     PARTLY_CLAIMED = "Partly Claimed"
     CANCELLED = "Cancelled"
     PAID = "Paid"
-    ALLOWED_AMOUNT_PER_DAY = 1000
+    RETURNED = "Returned"
+    PARTLY_CLAIMED_AND_RETURNED = "Partly Claimed and Returned"
