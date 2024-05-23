@@ -1,9 +1,9 @@
 <div>
     <h3>Create an Advance Request</h3> 
 
-    <p>In this Document, employee’s can create a cash advance request for work related expenses.  The process for requesting cash advances is similar to employee expense claims. These advances will be later settled against expenses by submitting expense claims. </p>
+    <p>In this Document, employee’s can create a cash advance request for work related expenses. These advances can be later settled against expenses by submitting expense claims. If the advance amount received is more than what could be spent on the trip then the balance amount should be returned.
+       The advance amount can be requested in any currency, but the accounting will record corresponding company currency amounts</p>
     <p><span style="color: red;">**</span>Advances not settled against expenses by employee will be deducted from salary after a certain time period</p>
-    <p> If you have received any cash advances for a specific purpose (Travel, stay etc) , you can settle the cash advances against the expense as well.</p>
         The Expense Category Available currently are:
         <ul>
             <li> <b>Business Expense Local -:</b>  General expenses by employees for day to day business like food, fuel, phone bills (within the office city )</li>
@@ -17,6 +17,25 @@
         <p>Approvers are auto filled based on organisation hierarchy.</p>
         <br>
         <p>Once you review it, you need to click on the “Send for Approval”  button at the top to submit the expense claim </p>
-        <h2><b>Some Important Points to keep in Mind</b></h2>
-        <p>On an Employee Level, Once he/she clicks on <b>“Send for Approval”</b> the expense claim will be shared to the approver and you will get a popup stating document shared successfully.  And the Status field will be updated from <b>Draft</b> to <b>“Pending approval”</b>. It is your responsibility to get the expense claim approved by your manager/skip manager as selected by the system. </p>
+        <b>Payment</b>
+        <p>Once the status reaches Pending Payment after all the approvals, Finance team can click on Create -> Payment, which will redirect to create a payment entry. Depending on the currency selected, complete the payment entry and submit. Partial payment is not supported, full sanctioned amount has to be completed.
+           Note that even though non INR payments might have happened on the ground, system will record it as INR payment to the employee. Make sure to use same exchange rate as is present in employee advance.</p>
+        <b>Return</b>
+        <p>If any advance given is not utilised or partially utilised then a return entry can be created by the finance team after receiving money from the same. For this purpose on clicking Create -> Return user will be redirected to Journal Entry. Partial return is not supported, all the unclaimed amount has to be returned in one journal entry. Similar to payment entry finance team will have option to add multi currency journal entry with exchange gain loss</p>
+        <b>Important Fields</b>
+        <p>
+            <ul>
+                <li><b>From Date, To Date: </b> Days for which advance is requested. This is asked because there is a per day limit on how much can be given as an advance in HR policy</li>
+                <li><b>Currency, Exchange rate: </b> If currency is same as company currency then exchange rate is not required. Else it is required. Finance team can change the exchange rate when the actual payment happens in requested currency</li>
+                <li><b>Approver: </b> Approver is auto selected by the system based on organisation hierarchy</li>
+                <li><b>Override Per Day Amount: </b> Flag available for the approver to Override per day amount restriction</li>
+                <li><b>Advance Requested: </b> Amount requested by the employee in selected currency</li>
+                <li><b>Advance Amount Sanctioned In User Currency: </b> Amount approved by the manager/hr/admin in selected currency</li>
+                <li><b>Paid Amount: </b> Amount paid by finance. This should be equal to amount sanctioned. Even though payment is recorded in INR, in employee advance it will be recorded as user selected currency</li>
+                <li><b>Claimed Amount: </b> Amount claimed by employee by getting their expense claims approved</li>
+                <li><b>Returned Amount: </b> Amount returned by employee if the full advance amount could not be utilised</li>
+            </ul>
+        </p>
+        <h4><b>Some Important Points to keep in Mind</b></h4>
+        <p>On an Employee Level, Once he/she clicks on <b>“Send for Approval”</b> the expense claim will be shared to the approver and you will get a popup stating document shared successfully.  And the Status field will be updated from <b>Draft</b> to <b>“Pending approval”</b>. It is employee's responsibility to get the expense claim approved by your manager/skip manager as selected by the system. </p>
 </div>

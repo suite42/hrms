@@ -1,9 +1,4 @@
 from hrms.hr.doctype.employee_advance.employee_advance import EmployeeAdvance
-from erpnext.accounts.doctype.payment_entry.payment_entry import (
-    get_party_details,
-    get_account_details,
-)
-from erpnext.accounts.doctype.sales_invoice.sales_invoice import get_bank_cash_account
 
 from hrms.suite42_utils.common_functions import (
     user_has_role,
@@ -29,6 +24,39 @@ from datetime import datetime, timedelta
 
 
 class CustomEmployeeAdvance(EmployeeAdvance):
+    def set_total_advance_paid(self):
+        super(CustomEmployeeAdvance, self).set_total_advance_paid()
+        if self.paid_amount:
+            if flt(self.paid_amount) != flt(self.advance_amount):
+                frappe.throw(_("Paid amount should be equal to advance amount, Partial pay is not supported"))
+            precision = self.precision("paid_amount")
+            total_amount = flt(flt(self.claimed_amount) + flt(self.return_amount), precision)
+            if flt(self.return_amount):
+                if total_amount != flt(self.paid_amount, precision):
+                    frappe.throw(_("If amount is returned then all unclaimed amount should be returned at once. Partial returns is not supported"))
+            if flt(self.claimed_amount) > 0 and flt(self.claimed_amount, precision) == flt(
+                self.paid_amount, precision
+            ):
+                self.status = EmployeeAdvanceConstants.CLAIMED
+                self.save()
+            elif flt(self.return_amount) > 0 and flt(self.return_amount, precision) == flt(
+                self.paid_amount, precision
+            ):
+                self.status = EmployeeAdvanceConstants.RETURNED
+                self.save()
+            elif (
+                flt(self.claimed_amount) > 0
+                and (flt(self.return_amount) > 0)
+                and total_amount == flt(self.paid_amount, precision)
+            ):
+                self.status = EmployeeAdvanceConstants.PARTLY_CLAIMED_AND_RETURNED
+                self.save()
+            elif flt(self.paid_amount) > 0 and flt(self.advance_amount, precision) == flt(
+                self.paid_amount, precision
+            ):
+                self.status = EmployeeAdvanceConstants.PAID
+                self.save()
+
     def validate(self):
         self.validate_employee_type()
         self.state_transtition_check()
@@ -53,7 +81,6 @@ class CustomEmployeeAdvance(EmployeeAdvance):
         ]
         self.add_approver()
         self.validate_approver()
-        self.validate_amount()
 
     def add_approver(self):
         employee_doc = frappe.get_doc("Employee", self.employee)
@@ -77,11 +104,12 @@ class CustomEmployeeAdvance(EmployeeAdvance):
         )
         old_doc = self.get_doc_before_save()
         if old_doc.status == EmployeeAdvanceConstants.PENDING_APPROVAL_BY_ADMIN_L2:
-            if self.sanctioned_amount > amount_allowed_for_the_current_trip:
+            amount_in_company_currency = flt(self.advance_amount * self.exchange_rate)
+            if amount_in_company_currency > amount_allowed_for_the_current_trip:
                 if not self.is_date_override:
                     frappe.throw(
                         _(
-                            f"Sanctioned amount {self.sanctioned_amount} should be less than total amount {amount_allowed_for_the_current_trip} allowed for {no_of_days} Days, select the Date override checkbox before approving"
+                            f"Sanctioned amount {amount_in_company_currency} should be less than total amount {amount_allowed_for_the_current_trip} allowed for {no_of_days} Days, select the Date override checkbox before approving"
                         )
                     )
 
@@ -143,6 +171,8 @@ class CustomEmployeeAdvance(EmployeeAdvance):
                 )
                 self.check_advance_amount()
             elif self.status == EmployeeAdvanceConstants.PENDING_APPROVAL_BY_ADMIN_L2:
+                if not self.advance_amount:
+                    frappe.throw(_("Advance amount should be >0 if approved"))
                 if old_doc.status not in [EmployeeAdvanceConstants.PENDING_APPROVAL]:
                     frappe.throw(_(f"Invalid State Transition to state {self.status}"))
                 if not (
@@ -163,6 +193,8 @@ class CustomEmployeeAdvance(EmployeeAdvance):
                     self.employee_bank_ifsc = employee_bank_details[0]
                 self.check_advance_amount()
             elif self.status == EmployeeAdvanceConstants.PENDING_PAYMENT:
+                if not self.advance_amount:
+                    frappe.throw(_("Advance amount should be >0 if approved"))
                 if old_doc.status not in [EmployeeAdvanceConstants.PENDING_APPROVAL_BY_ADMIN_L2]:
                     frappe.throw(_(f"Invalid State Transition to state {self.status}"))
                 if not user_has_role(frappe.session.user, RoleConstants.OFFICE_ADMIN_L2_ROLE):
@@ -178,6 +210,8 @@ class CustomEmployeeAdvance(EmployeeAdvance):
                     EmployeeAdvanceConstants.PENDING_PAYMENT,
                     EmployeeAdvanceConstants.PARTLY_CLAIMED,
                     EmployeeAdvanceConstants.CLAIMED,
+                    EmployeeAdvanceConstants.RETURNED,
+                    EmployeeAdvanceConstants.PARTLY_CLAIMED_AND_RETURNED,
                 ]:
                     frappe.throw(_(f"Invalid State Transition to state {self.status}"))
                 if (
@@ -193,6 +227,7 @@ class CustomEmployeeAdvance(EmployeeAdvance):
                 if old_doc.status not in [
                     EmployeeAdvanceConstants.CLAIMED,
                     EmployeeAdvanceConstants.PAID,
+                    EmployeeAdvanceConstants.PARTLY_CLAIMED_AND_RETURNED,
                 ]:
                     frappe.throw(_(f"Invalid State Transition to state {self.status}"))
             elif self.status == EmployeeAdvanceConstants.CLAIMED:
@@ -200,6 +235,12 @@ class CustomEmployeeAdvance(EmployeeAdvance):
                     EmployeeAdvanceConstants.PARTLY_CLAIMED,
                     EmployeeAdvanceConstants.PAID,
                 ]:
+                    frappe.throw(_(f"Invalid State Transition to state {self.status}"))
+            elif self.status == EmployeeAdvanceConstants.PARTLY_CLAIMED_AND_RETURNED:
+                if old_doc.status not in [EmployeeAdvanceConstants.PARTLY_CLAIMED]:
+                    frappe.throw(_(f"Invalid State Transition to state {self.status}"))
+            elif self.status == EmployeeAdvanceConstants.RETURNED:
+                if old_doc.status not in [EmployeeAdvanceConstants.PAID]:
                     frappe.throw(_(f"Invalid State Transition to state {self.status}"))
             elif self.status == EmployeeAdvanceConstants.CANCELLED:
                 if old_doc.status not in [
@@ -241,12 +282,12 @@ class CustomEmployeeAdvance(EmployeeAdvance):
                     _(f"Unhandelled State Transition from {old_doc.status} to {self.status}")
                 )
 
+
     def check_sanctioned_amount(self):
         if self.status == EmployeeAdvanceConstants.PENDING_APPROVAL:
-            if self.sanctioned_amount > self.advance_amount:
+            if self.advance_amount > self.advance_requested:
                 frappe.throw(_("Cannot put Sanctioned amount more than the advanced amount"))
-            if self.sanctioned_amount == 0:
-                frappe.throw(_("sanctioned amount cannot be zero"))
+
 
     def validate_approver(self):
         user_id = frappe.get_list(
@@ -276,15 +317,6 @@ class CustomEmployeeAdvance(EmployeeAdvance):
         ):
             frappe.throw(_(f"Approval selected does not have L1 or L2 Expense Approver Role"))
 
-    def validate_amount(self):
-        if self.currency != self.company_currency:
-            if not self.advance_amt_in_company_currency:
-                frappe.throw(
-                    _('Please Fill the field "Advance Amount In Company Currency" before saving')
-                )
-        elif self.currency == self.company_currency:
-            self.advance_amt_in_company_currency = self.advance_amount
-
     def update_claimed_amount(self):
         claimed_amount = (
             frappe.db.sql(
@@ -302,8 +334,9 @@ class CustomEmployeeAdvance(EmployeeAdvance):
             or 0
         )
 
+        claimed_amount = flt(claimed_amount/self.exchange_rate)
         self.claimed_amount = claimed_amount
-        if self.claimed_amount == self.sanctioned_amount:
+        if self.claimed_amount == self.advance_amount:
             self.status = EmployeeAdvanceConstants.CLAIMED
         elif self.claimed_amount != 0:
             self.status = EmployeeAdvanceConstants.PARTLY_CLAIMED
@@ -327,10 +360,10 @@ class CustomEmployeeAdvance(EmployeeAdvance):
         pass
 
     def on_submit(self):
-        if self.status != EmployeeAdvanceConstants.PENDING_APPROVAL_BY_ADMIN_L2:
-            frappe.throw(_(f"Cannot Submit in state {self.status}"))
         if self.is_submit_and_cancel:
             self.cancel()
+        if self.status != EmployeeAdvanceConstants.PENDING_APPROVAL_BY_ADMIN_L2:
+            frappe.throw(_(f"Cannot Submit in state {self.status}"))
 
     def on_cancel(self):
         self.status = EmployeeAdvanceConstants.CANCELLED
@@ -395,118 +428,14 @@ def next_state(doc_name):
 
 @frappe.whitelist()
 @handle_exceptions_with_readable_message
-def check_sanctioned_amount_is_above_limit(frm_date, to_date, sanctioned_amount):
+def check_advance_amount_is_above_limit(frm_date, to_date, advance_amount, exchange_rate):
     from_date = datetime.strptime(str(frm_date), "%Y-%m-%d")
     to__date = datetime.strptime(str(to_date), "%Y-%m-%d")
     no_of_days = to__date.day - from_date.day + 1
     amount_allowed_for_the_current_trip = (
         no_of_days * EmployeeAdvanceConstants.ALLOWED_AMOUNT_PER_DAY
     )
-    if int(sanctioned_amount) > amount_allowed_for_the_current_trip:
+    if flt(flt(advance_amount) * flt(exchange_rate)) > amount_allowed_for_the_current_trip:
         return True
     else:
         return False
-
-
-@frappe.whitelist()
-@handle_exceptions_with_readable_message
-def create_payment_entry(doc_name, values):
-    if not user_has_role(frappe.session.user, RoleConstants.FINANCE_ROLE):
-        frappe.throw(_("Only Finance Team can make a Payment entry"))
-
-    employee_advance_doc = frappe.get_doc("Employee Advance", doc_name)
-
-    payment_values = frappe._dict(json.loads(values))
-
-    if payment_values.total_amount <= 0:
-        frappe.throw(_("Paid Amount should be greater than 0"))
-
-    current_date = datetime.now()
-    current_month = current_date.month
-    current_date = current_date.replace(month=current_month - 1, day=5)
-
-    payment_date = datetime.strptime(payment_values.payment_date, "%Y-%m-%d")
-    if payment_date < current_date:
-        frappe.throw(_(f"Payment Date Cannot be before  {current_date.strftime('%Y-%m-%d')}"))
-
-    bank = None
-    bank_account = None
-    bank_account_no = None
-    if payment_values.mode_of_payment == "Cash":
-        bank_cash_doc = frappe.get_doc("Account", payment_values.from_account)
-    else:
-        company_bank_account_doc = frappe.get_doc("Bank Account", payment_values.from_account)
-        if (
-            not company_bank_account_doc.is_company_account
-            or company_bank_account_doc.bank_account_no
-            not in CompanyConstants.REIMBURSEMENT_BANK_ACCOUNT
-        ):
-            frappe.throw(_("Company bank account selected is not supported"))
-        bank_cash_doc = frappe.get_doc("Account", company_bank_account_doc.account)
-        bank = company_bank_account_doc.bank
-        bank_account = company_bank_account_doc.name
-        bank_account_no = company_bank_account_doc.bank_account_no
-
-    bank_cash_account = bank_cash_doc.name
-    bank_account_currency = bank_cash_doc.account_currency
-
-    paid_to = employee_advance_doc.advance_account
-
-    paid_to_account_currency = get_account_details(paid_to, frappe.utils.nowdate()).get(
-        "account_currency"
-    )
-
-    employee_bank_account = frappe.db.get_list(
-        "Bank Account",
-        filters={"party_type": "Employee", "party": employee_advance_doc.employee},
-        pluck="name",
-        ignore_permissions=True,
-    )
-
-    if not employee_bank_account:
-        frappe.throw(_("Please Create Employee Bank Account First to create a payment entry"))
-    employee_bank_account = employee_bank_account[0]
-
-    payment_entry = frappe.get_doc(
-        {
-            "doctype": "Payment Entry",
-            "docstatus": 1,
-            "payment_type": "Pay",
-            "mode_of_payment": payment_values.mode_of_payment,
-            "party_type": "Employee",
-            "party": employee_advance_doc.employee,
-            "party_name": employee_advance_doc.employee_name,
-            "party_bank_account": employee_bank_account,
-            "paid_from": bank_cash_account,
-            "paid_from_account_currency": bank_account_currency,
-            "paid_to": payment_values.to_chart_Account,
-            "paid_to_account_currency": paid_to_account_currency,
-            "paid_amount": employee_advance_doc.sanctioned_amount,
-            "total_allocated_amount": employee_advance_doc.sanctioned_amount,
-            "received_amount": employee_advance_doc.sanctioned_amount,
-            "unallocated_amount": 0,
-            "references": [
-                {
-                    "reference_doctype": "Employee Advance",
-                    "reference_name": employee_advance_doc.name,
-                    "total_amount": employee_advance_doc.sanctioned_amount,
-                    "outstanding_amount": employee_advance_doc.sanctioned_amount,
-                    "allocated_amount": employee_advance_doc.sanctioned_amount,
-                    "parentfield": "references",
-                    "parenttype": "Payment Entry",
-                    "docstatus": 1,
-                    "doctype": "Payment Entry Reference",
-                }
-            ],
-            "reference_no": payment_values.reference_no,
-            "reference_date": payment_values.payment_date,
-            "bank": bank,
-            "bank_account": bank_account,
-            "bank_account_no": bank_account_no,
-        }
-    )
-    payment_entry_doc = payment_entry.insert(ignore_permissions=True)
-    employee_advance_doc.reload()
-    employee_advance_doc.status = EmployeeAdvanceConstants.PAID
-    employee_advance_doc.save(ignore_permissions=True)
-    return f"Payment Done Successfullly with the Payment Entry {payment_entry_doc.name}"

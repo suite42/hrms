@@ -483,9 +483,8 @@ class CustomExpenseClaim(ExpenseClaim):
                     "employee_advance": employee_advance_doc.name,
                     "posting_date": employee_advance_doc.posting_date.strftime("%Y-%m-%d"),
                     "advance_account": employee_advance_doc.advance_account,
-                    "advance_paid": employee_advance_doc.paid_amount,
-                    "unclaimed_amount": employee_advance_doc.paid_amount
-                    - employee_advance_doc.claimed_amount,
+                    "advance_paid": flt(employee_advance_doc.paid_amount * employee_advance_doc.exchange_rate),
+                    "unclaimed_amount": flt((employee_advance_doc.paid_amount - employee_advance_doc.claimed_amount) * employee_advance_doc.exchange_rate),
                     "allocated_amount": 0,
                 }
                 advances_list.append(advances_entry)
@@ -584,7 +583,7 @@ class CustomExpenseClaim(ExpenseClaim):
     def check_claimed_amount_available_in_employee_advance(self):
         for d in self.get("advances"):
             advance_doc = frappe.get_doc("Employee Advance", d.employee_advance)
-            if d.allocated_amount > (advance_doc.paid_amount - advance_doc.claimed_amount):
+            if d.allocated_amount > flt((advance_doc.paid_amount - advance_doc.claimed_amount) * advance_doc.exchange_rate):
                 frappe.throw(
                     _(
                         f"Allocated amount for employee advance {d.employee_advance} is greater than the remaining unclaimed amount {advance_doc.paid_amount - advance_doc.claimed_amount}"

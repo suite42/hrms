@@ -245,11 +245,11 @@ def get_total_amount_and_exchange_rate(ref_doc, party_account_currency, company_
 		total_amount = flt(ref_doc.total_sanctioned_amount) + flt(ref_doc.total_taxes_and_charges)
 	elif ref_doc.doctype == "Employee Advance":
 		total_amount = ref_doc.advance_amount
-		exchange_rate = ref_doc.get("exchange_rate")
+		exchange_rate = ref_doc.get("exchange_rate") or 1.0
 		if party_account_currency != ref_doc.currency:
 			total_amount = flt(total_amount) * flt(exchange_rate)
-		if party_account_currency == company_currency:
-			exchange_rate = 1
+		# if party_account_currency == company_currency:
+		# 	exchange_rate = 1
 
 	elif ref_doc.doctype == "Gratuity":
 		total_amount = ref_doc.amount

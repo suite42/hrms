@@ -61,6 +61,16 @@ frappe.ui.form.on('Employee Advance', {
 	},
 
 	refresh: function(frm) {
+		if (frm.doc.status == "Pending Payment") {
+			frm.add_custom_button(__('Payment'), function () {
+				frm.events.make_payment_entry(frm);
+			}, __('Create'));
+		}
+		if (["Paid", "Partly Claimed"].includes(frm.doc.status)) {
+			frm.add_custom_button(__("Return"), function() {
+				frm.trigger('make_return_entry');
+			}, __('Create'));
+		}
 		if(frm.doc.status =="Draft" && frm.doc.docstatus ===0){
 			frm.set_query('approver_1', () => {
 				return {
@@ -79,16 +89,16 @@ frappe.ui.form.on('Employee Advance', {
 
 		if(frm.doc.currency == frm.doc.company_currency){
 			frm.toggle_display('exchange_rate', false)
-			frm.toggle_display('advance_amt_in_company_currency', false)
 		}
 
 		if(frm.doc.status == "Pending Approval By Admin L2"){
 			frappe.call({
-				method: "hrms.overrides.custom_employee_advance.check_sanctioned_amount_is_above_limit",
+				method: "hrms.overrides.custom_employee_advance.check_advance_amount_is_above_limit",
 				args: {
 					frm_date: frm.doc.from_date,
 					to_date: frm.doc.to_date,
-					sanctioned_amount: frm.doc.sanctioned_amount
+					advance_amount: frm.doc.advance_amount,
+					exchange_rate: frm.doc.exchange_rate,
 				},
 				callback: function(r) {
 					if (r.message) {						
@@ -126,84 +136,6 @@ frappe.ui.form.on('Employee Advance', {
 				}
 			});
 		});
-
-		if(frm.doc.status === "Pending Payment"){
-			frm.events.get_mode_of_payments(frm)
-			frm.events.get_company_bank_accounts(frm)
-			var modeOfPayment = null
-			frm.add_custom_button(__("Pay"), function() {
-				frappe.prompt([
-					{
-						label: __('Mode Of Payment'),
-						fieldname: 'mode_payment',
-						fieldtype: 'Select',
-						options: frm.fields_dict['payments_mode'].options,
-						reqd:1,
-					}
-				], function(values){
-					var modeOfPayment = values.mode_payment
-					var default_form_account="";
-					if (modeOfPayment == "Cash"){
-						default_form_account="Cash - Suite42"
-						frm.fields_dict['from_account'].options.push(default_form_account)
-					}
-					frappe.prompt([
-						{
-							label: __('Mode Of Payment'),
-							fieldname: 'mode_of_payment',
-							fieldtype: 'Data',
-							default: modeOfPayment,
-							reqd:1,
-							read_only: 1,
-						},
-						{
-							label: __('Company Bank Account'),
-							fieldname: 'from_account',
-							fieldtype: 'Select',
-							options: frm.fields_dict['from_account'].options,
-							default: default_form_account,
-							reqd:1,
-						},
-						{
-							label: __('To Chart Account '),
-							fieldname: 'to_chart_Account',
-							fieldtype: 'Data',
-							default: frm.doc.advance_account,
-							reqd:1,
-							read_only: 1
-						},
-						{
-							label: __('Payment Date'),
-							fieldname: 'payment_date',
-							fieldtype: 'Date',
-							reqd:1,
-						},
-						{
-							label: __('Reference No'),
-							fieldname: 'reference_no',
-							fieldtype: 'Data',
-							reqd:(modeOfPayment == "Cash")?0:1,
-							hidden:(modeOfPayment == "Cash")?1:0
-						},
-						{
-							label: __('Amount'),
-							fieldname: 'total_amount',
-							fieldtype: 'Currency',
-							default: frm.doc.sanctioned_amount,
-							read_only: 1,
-						}
-					], function(values){
-						var current_date = frappe.datetime.get_today()
-						if (values.payment_date > current_date){
-							frappe.throw("Payment Date cannot be a future Date")
-						}
-						frm.events.create_payment_entry(frm, values);
-						frm.refresh()
-					},__("Enter Payment Details"))
-				},__("Payment Details"))
-			});
-		}
-
 	},
 
 	get_company_bank_accounts: function(frm){
@@ -372,7 +304,6 @@ frappe.ui.form.on('Employee Advance', {
 			}
 			if (from_currency != company_currency) {
 				frm.events.set_exchange_rate(frm, from_currency, company_currency);
-				frm.toggle_display("advance_amt_in_company_currency", true)
 			} else {
 				frm.set_value("exchange_rate", 1.0);
 				frm.set_df_property('exchange_rate', 'hidden', 1);
